@@ -413,11 +413,11 @@ Tripla proteção contra duplicidade: (a) o `WHERE status='PENDENTE'` garante qu
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDENTE_PAGAMENTO : POST /reservas (CLIENTE)\nRN06-RN11, 201
-    PENDENTE_PAGAMENTO --> CONFIRMADA : pagamento PAGO\n(job / webhook / dev) RN12
-    PENDENTE_PAGAMENTO --> EXPIRADA : ExpiracaoReservaJob\nexpira_em < agora RN10
-    PENDENTE_PAGAMENTO --> CANCELADA : CLIENTE cancela | DONO cancela com motivo\n| SISTEMA (gateway falhou, RN17)
-    CONFIRMADA --> CANCELADA : CLIENTE ate 2 h antes\n| DONO ate o inicio com motivo (RN13)
+    [*] --> PENDENTE_PAGAMENTO : POST /reservas (CLIENTE), RN06-RN11, 201
+    PENDENTE_PAGAMENTO --> CONFIRMADA : pagamento PAGO (job, webhook ou dev), RN12
+    PENDENTE_PAGAMENTO --> EXPIRADA : ExpiracaoReservaJob, expira_em < agora, RN10
+    PENDENTE_PAGAMENTO --> CANCELADA : CLIENTE, DONO com motivo ou SISTEMA (gateway falhou, RN17)
+    CONFIRMADA --> CANCELADA : CLIENTE ate 2 h antes, DONO ate o inicio com motivo (RN13)
     EXPIRADA --> CONFIRMADA : pagamento tardio e slot livre (RN14)
     CANCELADA --> [*]
     EXPIRADA --> [*]
@@ -430,12 +430,12 @@ Versão textual: `PENDENTE_PAGAMENTO` → `CONFIRMADA` (pago) | `EXPIRADA` (15 m
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDENTE : criarCobranca (PixGateway)\nexpiracao 900 s
-    PENDENTE --> PAGO : CONCLUIDA no Inter | webhook\n| /dev/confirmar (RN12)
+    [*] --> PENDENTE : criarCobranca (PixGateway), expiracao 900 s
+    PENDENTE --> PAGO : CONCLUIDA no Inter, webhook ou /dev/confirmar (RN12)
     PENDENTE --> EXPIRADO : ExpiracaoReservaJob (RN10)
-    PENDENTE --> CANCELADO : reserva cancelada\n+ PATCH REMOVIDA best effort
-    EXPIRADO --> PAGO : pagamento tardio (RN14)\nlog ESTORNO_MANUAL se slot ocupado
-    CANCELADO --> PAGO : pagamento tardio (RN14)\nlog ESTORNO_MANUAL
+    PENDENTE --> CANCELADO : reserva cancelada, PATCH REMOVIDA best effort
+    EXPIRADO --> PAGO : pagamento tardio (RN14), log ESTORNO_MANUAL se slot ocupado
+    CANCELADO --> PAGO : pagamento tardio (RN14), log ESTORNO_MANUAL
     PAGO --> [*]
 ```
 

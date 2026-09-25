@@ -6,9 +6,9 @@ Pirâmide de testes do projeto (unitários por service, controllers com `@WebMvc
 
 ```mermaid
 flowchart TB
-  U["Testes com usuários (5-8 pessoas, SUS)\ndocs/22 — 09 a 13/11"] --> M
-  M["Testes manuais CT-01..CT-31\nSwagger + app no celular — CP2 e N2"] --> I
-  I["Integração backend (Testcontainers postgres:18-alpine)\nReservaConcorrenciaIT, FlywayMigracaoIT, DAO opcional"] --> C
+  U["Testes com usuários (5-8 pessoas, SUS)<br/>docs/22 — 09 a 13/11"] --> M
+  M["Testes manuais CT-01..CT-31<br/>Swagger + app no celular — CP2 e N2"] --> I
+  I["Integração backend (Testcontainers postgres:18-alpine)<br/>ReservaConcorrenciaIT, FlywayMigracaoIT, DAO opcional"] --> C
   C["Controllers @WebMvcTest + ViewModels com FakeApiService"] --> S
   S["Unitários: services do backend, PixPayloadBuilder, SlotService, Sincronizador"]
 ```

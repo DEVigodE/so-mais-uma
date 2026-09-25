@@ -59,10 +59,10 @@ Participantes CLIENTE fazem T1-T4; participantes DONO fazem T1, T5, T6. Ordem fi
 
 ```mermaid
 flowchart LR
-  A[Boas-vindas e termo\n3 min] --> B[Contexto do perfil\n2 min]
-  B --> C[Tarefas T1..T4 ou T1,T5,T6\n12 min]
-  C --> D[SUS 10 itens\n3 min]
-  D --> E[3 perguntas abertas\n3 min]
+  A["Boas-vindas e termo<br/>3 min"] --> B["Contexto do perfil<br/>2 min"]
+  B --> C["Tarefas T1..T4 ou T1,T5,T6<br/>12 min"]
+  C --> D["SUS 10 itens<br/>3 min"]
+  D --> E["3 perguntas abertas<br/>3 min"]
   E --> F[Agradecimento e reset do ambiente]
 ```
 

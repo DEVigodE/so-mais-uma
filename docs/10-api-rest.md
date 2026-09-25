@@ -27,18 +27,18 @@ Dono do documento: Integrante D (com B na parte de Quadra/HorarioFuncionamento e
 
 ```mermaid
 flowchart LR
-  A[Requisicao HTTP] --> B[Filtro JWT\nSecurityConfig]
+  A[Requisicao HTTP] --> B["Filtro JWT<br/>SecurityConfig"]
   B -- sem token / invalido --> E401[401 TOKEN_INVALIDO]
-  B --> C[Controller\n@Valid + @PreAuthorize]
+  B --> C["Controller<br/>@Valid + @PreAuthorize"]
   C -- perfil errado --> E403[403 ACESSO_NEGADO]
-  C -- DTO invalido --> E400[400 VALIDACAO + campos]
-  C --> D[Service\nregras + @Transactional]
+  C -- DTO invalido --> E400["400 VALIDACAO + campos"]
+  C --> D["Service<br/>regras + @Transactional"]
   D -- nao encontrado --> E404[404 NAO_ENCONTRADO]
-  D -- conflito de estado --> E409[409 *]
-  D -- regra de negocio --> E422[422 REGRA_NEGOCIO + subcodigo]
+  D -- conflito de estado --> E409["409 conflito"]
+  D -- regra de negocio --> E422["422 REGRA_NEGOCIO + subcodigo"]
   D -- gateway Pix falhou --> E502[502 PAGAMENTO_INDISPONIVEL]
-  D --> R[2xx + DTO de resposta]
-  E401 & E403 & E400 & E404 & E409 & E422 & E502 --> H[GlobalExceptionHandler\nProblemDetail + codigo]
+  D --> R["2xx + DTO de resposta"]
+  E401 & E403 & E400 & E404 & E409 & E422 & E502 --> H["GlobalExceptionHandler<br/>ProblemDetail + codigo"]
 ```
 
 Versão textual: filtro JWT (401) -> controller com `@Valid` e `@PreAuthorize` (400/403) -> service com regras e transação (404/409/422/502) -> `GlobalExceptionHandler` converte toda exceção em `ProblemDetail` com o campo `codigo` (e o `subcodigo` nas respostas 422).

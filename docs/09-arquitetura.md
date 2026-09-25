@@ -26,9 +26,9 @@ flowchart LR
         PIX --> INTERGW["InterPixGateway (profiles inter-*)"]
     end
 
-    JPA -- "JDBC · Flyway" --> PG[("PostgreSQL 18\nlocal (Docker) · Neon (beta)")]
-    INTERGW -- "mTLS + OAuth2 client_credentials" --> INTER["Banco Inter — API Pix\nsandbox | producao"]
-    CEP -- "HTTPS" --> BRASILAPI["BrasilAPI CEP v2\n(fallback ViaCEP)"]
+    JPA -- "JDBC · Flyway" --> PG[("PostgreSQL 18<br/>local (Docker) · Neon (beta)")]
+    INTERGW -- "mTLS + OAuth2 client_credentials" --> INTER["Banco Inter — API Pix<br/>sandbox | producao"]
+    CEP -- "HTTPS" --> BRASILAPI["BrasilAPI CEP v2<br/>(fallback ViaCEP)"]
     INTER -. "webhook POST /webhooks/inter/pix/{segredo} (REC)" .-> CTRL
 ```
 
@@ -225,7 +225,7 @@ sequenceDiagram
     C->>C: @Valid CriarReservaRequest
     C->>F: criar(clienteId, request)
     F->>S: criarPendente(...)
-    S->>DB: SELECT quadra ativa, horarios; exists pendente do cliente (RN09, RN11)
+    S->>DB: SELECT quadra ativa e horarios, exists pendente do cliente (RN09, RN11)
     S->>DB: INSERT reserva PENDENTE_PAGAMENTO (saveAndFlush)
     alt slot já ocupado (ux_reserva_slot_ativo)
         DB-->>S: unique_violation

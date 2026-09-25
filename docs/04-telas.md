@@ -245,7 +245,7 @@ flowchart TD
     Splash -->|sessão CLIENTE| HC
     Splash -->|sessão DONO| HD
 
-    subgraph HC[HomeCliente - bottom-nav Quadras | Reservas | Perfil]
+    subgraph HC["HomeCliente - bottom-nav: Quadras / Reservas / Perfil"]
         Quadras --> DetalheQuadra
         DetalheQuadra -->|slot LIVRE| ConfirmarReserva
         ConfirmarReserva -->|201| Pagamento
@@ -257,7 +257,7 @@ flowchart TD
         PerfilC[Perfil]
     end
 
-    subgraph HD[HomeDono - bottom-nav Minhas quadras | Reservas | Perfil]
+    subgraph HD["HomeDono - bottom-nav: Minhas quadras / Reservas / Perfil"]
         MinhasQuadras -->|FAB| FormQuadraNova[FormQuadra null]
         MinhasQuadras -->|Editar| FormQuadraEdit[FormQuadra id]
         MinhasQuadras -->|Horários| HorariosQuadra

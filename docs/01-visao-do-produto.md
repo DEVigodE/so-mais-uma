@@ -148,7 +148,7 @@ sequenceDiagram
     end
     Note over API,Pix: ConsultaPagamentoJob (60 s) consulta o gateway
     Pix-->>API: CONCLUIDA (endToEndId)
-    API->>DB: UPDATE pagamento PAGO; UPDATE reserva CONFIRMADA (condicional, idempotente)
+    API->>DB: UPDATE pagamento PAGO e reserva CONFIRMADA (condicional, idempotente)
     App->>API: GET /reservas/{id}/pagamento
     API-->>App: status PAGO
     App->>App: notificação local + navega para DetalheReserva

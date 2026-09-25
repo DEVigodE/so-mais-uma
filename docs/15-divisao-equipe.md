@@ -10,10 +10,10 @@ Cada integrante é **dono de uma fatia do domínio** e entrega, nela, o controll
 
 ```mermaid
 flowchart LR
-  A["A — Auth, usuário, segurança,\nrepositório, infra de entrega"]
-  B["B — Quadra, horários, CEP,\nmodelagem"]
-  C["C — Reserva, slots, concorrência,\nsync local, geolocalização, usabilidade"]
-  D["D — Pagamento Pix, webhook,\nburocracia Inter, backlog, plano de testes"]
+  A["A — Auth, usuário, segurança,<br/>repositório, infra de entrega"]
+  B["B — Quadra, horários, CEP,<br/>modelagem"]
+  C["C — Reserva, slots, concorrência,<br/>sync local, geolocalização, usabilidade"]
+  D["D — Pagamento Pix, webhook,<br/>burocracia Inter, backlog, plano de testes"]
   A <-- "suplentes" --> D
   B <-- "suplentes" --> C
 ```
