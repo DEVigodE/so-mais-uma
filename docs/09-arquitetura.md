@@ -16,7 +16,7 @@ flowchart LR
 
     API -- "HTTPS · JSON · /api/v1 · Authorization: Bearer JWT" --> CTRL
 
-    subgraph BE["Backend — Spring Boot 4.1 · JDK 21 (br.com.somaisuma)"]
+    subgraph BE["Backend — Spring Boot 4.1 · JDK 25 (br.com.puc.so_mais_uma)"]
         SEC["security: JWT HS256 (Nimbus)"] --> CTRL["controller"]
         CTRL --> SVC["service (+ ReservaFacade, jobs @Scheduled)"]
         SVC --> JPA["repository (Spring Data JPA)"]
@@ -98,17 +98,17 @@ Todas as versões foram verificadas em 01/09/2026 (tabela completa na seção 8)
 
 ## 3. Backend — organização em camadas
 
-Pacote raiz `br.com.somaisuma`, um único módulo Gradle, um único jar. Pacotes por **camada** (e não por feature) porque mapeiam literalmente o critério 2 da disciplina; conflitos de merge são evitados porque cada domínio tem os próprios arquivos dentro de cada pacote.
+Pacote raiz `br.com.puc.so_mais_uma`, um único módulo Maven, um único jar. Pacotes por **camada** (e não por feature) porque mapeiam literalmente o critério 2 da disciplina; conflitos de merge são evitados porque cada domínio tem os próprios arquivos dentro de cada pacote.
 
 ### Árvore de arquivos
 
 ```text
 backend/
-├── build.gradle.kts · settings.gradle.kts · gradle/libs.versions.toml
+├── pom.xml · mvnw · mvnw.cmd · .mvn/wrapper/
 ├── compose.yaml                      (postgres:18-alpine, usado pelo spring-boot-docker-compose)
-├── Dockerfile                        (multi-stage: gradle build -> eclipse-temurin:21-jre)
+├── Dockerfile                        (multi-stage: mvnw package -> eclipse-temurin:25-jre)
 └── src/
-    ├── main/java/br/com/somaisuma/
+    ├── main/java/br/com/puc/so_mais_uma/
     │   ├── SoMaisUmaApplication.java             @SpringBootApplication @EnableScheduling
     │   ├── config/
     │   │   ├── SecurityConfig.java               stateless, oauth2ResourceServer(jwt), csrf off, rotas públicas
@@ -176,7 +176,7 @@ backend/
     │   ├── application.yml                       padrão: profile simulado, /api/v1, Flyway, fuso
     │   ├── application-simulado.yml · application-inter-sandbox.yml · application-inter-prod.yml
     │   └── db/migration/V1__init.sql (seed em scripts/seed-demo.sql, fora do Flyway)
-    └── test/java/br/com/somaisuma/
+    └── test/java/br/com/puc/so_mais_uma/
         ├── AbstractIntegrationTest.java          @SpringBootTest + @ServiceConnection PostgreSQLContainer("postgres:18-alpine")
         ├── service/ReservaConcorrenciaIT.java    10 threads no mesmo slot -> 1x201, 9x409
         ├── service/*ServiceTest.java · security/JwtServiceTest.java · integracao/pix/PixPayloadBuilderTest.java
@@ -479,7 +479,7 @@ O caminho completo é: exceção de domínio no `service` -> `GlobalExceptionHan
 
 | Ambiente | Quando | Backend | Banco | Pix | App aponta para |
 |---|---|---|---|---|---|
-| **Dev local** | S1–S8 e sempre | `docker compose up -d` (PostgreSQL) + `./gradlew bootRun` (profile `simulado`) | `postgres:18-alpine` local, recriável com `docker compose down -v` | `SimuladoPixGateway`; quem tem `.crt/.key` do sandbox roda `inter-sandbox` | Emulador: `http://10.0.2.2:8080`; celular físico via USB: IP da LAN (cleartext liberado só no build `debug` via `network_security_config`); Wi-Fi da faculdade bloqueando: hotspot |
+| **Dev local** | S1–S8 e sempre | `docker compose up -d` (PostgreSQL) + `./mvnw spring-boot:run` (profile `simulado`) | `postgres:18-alpine` local, recriável com `docker compose down -v` | `SimuladoPixGateway`; quem tem `.crt/.key` do sandbox roda `inter-sandbox` | Emulador: `http://10.0.2.2:8080`; celular físico via USB: IP da LAN (cleartext liberado só no build `debug` via `network_security_config`); Wi-Fi da faculdade bloqueando: hotspot |
 | **Webhook em dev** | teste em S8 | `ngrok http 8080` ou `cloudflared` | local | `inter-sandbox` | — |
 | **Beta / testes com usuários / CP2 / N2** | deploy em S9 (26–30/10) | **Render** Web Service Docker, HTTPS automático, deploy por push na `main` | **Neon** PostgreSQL gratuito | `SPRING_PROFILES_ACTIVE=inter-sandbox` (`.crt/.key` como Secret Files); `simulado` se o sandbox falhar | APK release: `BuildConfig.API_BASE_URL = https://<app>.onrender.com/api/v1` |
 | **Semana de testes com usuários** | 09 a 13/11 | Render, com `SPRING_PROFILES_ACTIVE=simulado` durante toda a semana | Neon | `SimuladoPixGateway` | D devolve para `inter-sandbox` na seg 16/11 |
@@ -529,7 +529,7 @@ Um único workflow, `.github/workflows/ci.yml`, disparado em `pull_request` e em
 | Job | Passos | Tempo alvo |
 |---|---|---|
 | `segredos` | `actions/checkout` -> varredura de `git ls-files` que falha o build se houver `.env` (exceto `.env.exemplo`), `*.key`, `*.crt`, `*.pem`, `*.pfx`, `*.p12`, `*.jks` versionados | < 1 min |
-| `backend` | `actions/setup-java` (Temurin 21) + `gradle/actions/setup-gradle` -> `./gradlew build` (compila, unitários, `@WebMvcTest` e `ReservaConcorrenciaIT` via Testcontainers, Docker já disponível no runner Ubuntu, e gera o jar) | < 6 min |
+| `backend` | `actions/setup-java` (Temurin 25, cache Maven) -> `./mvnw -B verify` (compila, unitários, `@WebMvcTest` e `ReservaConcorrenciaIT` via Testcontainers, Docker já disponível no runner Ubuntu, e gera o jar) | < 6 min |
 | `android` | `setup-java` 21 + `setup-gradle` -> `./gradlew testDebugUnitTest assembleDebug` (ViewModels com fakes e APK debug como artifact) | < 8 min |
 
 Regras: `main` protegida, PR só mergeia com CI verde e uma aprovação do suplente (docs/21-git-e-organizacao.md); deploy no Render é automático por push na `main` a partir de S9; o `ReservaConcorrenciaIT` roda em todo PR do backend porque é a evidência de RN08.
@@ -549,7 +549,7 @@ Regras: `main` protegida, PR só mergeia com CI verde e uma aprovação do suple
 | Room cache-only com `fallbackToDestructiveMigration` | migrations do Room | app nunca edita localmente; cache é recriado no sync |
 | Fuso único `America/Sao_Paulo` | coluna de fuso por quadra | elimina slot deslocado sem lógica extra (RNF12) |
 | Render + Neon | VM + Caddy | HTTPS grátis sem operar servidor |
-| Gradle Kotlin DSL nos dois projetos | Maven no backend | uma ferramenta só |
+| Maven no backend, Gradle Kotlin DSL no Android | Gradle nos dois projetos | o esqueleto Maven do backend já existia e funciona; converter o build não mudaria nenhum comportamento observável |
 
 ## 8. Versões fixadas (verificadas em 01/09/2026)
 

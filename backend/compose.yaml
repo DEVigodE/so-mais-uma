@@ -1,0 +1,16 @@
+# Banco de desenvolvimento. O suporte a Docker Compose do Spring Boot sobe este
+# serviço automaticamente em `./mvnw spring-boot:run` e configura o datasource.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: somaisuma
+      POSTGRES_USER: somaisuma
+      POSTGRES_PASSWORD: somaisuma
+    ports:
+      - "5432:5432"
+    volumes:
+      - somaisuma-pgdata:/var/lib/postgresql
+
+volumes:
+  somaisuma-pgdata:

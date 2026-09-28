@@ -1,0 +1,34 @@
+# Homologação do Banco Inter: PixGateway externo (sandbox), endpoint de simulação
+# repassando ao provedor, webhook e job de consulta ligados, documentação ligada.
+app:
+  dev:
+    endpoint-simulacao: true
+    key: ${DEV_KEY}
+  pix:
+    webhook-habilitado: true
+    consulta-habilitada: true
+    inter:
+      base-url: ${INTER_BASE_URL:https://cdpj-sandbox.partners.uatinter.co}
+      client-id: ${INTER_CLIENT_ID}
+      client-secret: ${INTER_CLIENT_SECRET}
+      cert-path: ${INTER_CRT}
+      key-path: ${INTER_KEY}
+      chave: ${INTER_CHAVE_PIX}
+      escopos: ${INTER_ESCOPOS:cob.write cob.read pix.read pix.write webhook.read webhook.write}
+      webhook-segredo: ${INTER_WEBHOOK_SEGREDO}
+
+spring:
+  ssl:
+    bundle:
+      pem:
+        # mTLS com o Banco Inter: certificado e chave PEM lidos direto dos arquivos secretos.
+        inter:
+          keystore:
+            certificate: file:${INTER_CRT}
+            private-key: file:${INTER_KEY}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

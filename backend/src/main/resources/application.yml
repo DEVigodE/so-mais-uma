@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: so-mais-uma
+  profiles:
+    # Ambiente padrão: sobe sem nenhuma credencial de terceiro (design.md D7).
+    default: simulado
+  config:
+    # .env local lido como arquivo de propriedades (nunca versionado; modelo em .env.exemplo).
+    import: optional:file:.env[.properties]
+  datasource:
+    # Em produção: SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD. Em dev o suporte a Docker
+    # Compose substitui estes valores pelos do compose.yaml.
+    url: jdbc:postgresql://localhost:5432/somaisuma
+    username: somaisuma
+    password: somaisuma
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    time-zone: ${APP_FUSO_HORARIO:America/Sao_Paulo}
+  mvc:
+    problemdetails:
+      enabled: true
+  task:
+    scheduling:
+      pool:
+        size: 2
+  threads:
+    virtual:
+      enabled: false
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  api-prefix: /api/v1
+  fuso: ${APP_FUSO_HORARIO:America/Sao_Paulo}
+  jwt:
+    secret: ${JWT_SECRET:}
+    validade: ${JWT_VALIDADE_DIAS:7}d
+  reserva:
+    prazo-pagamento: ${RESERVA_PRAZO_PAGAMENTO:PT15M}
+    janela-dias: 14
+  jobs:
+    expiracao-intervalo-ms: 60000
+    consulta-pagamento-intervalo-ms: 60000
+    consulta-pagamento-lote: 10
+  login:
+    max-falhas: 5
+    bloqueio: PT15M
+  cep:
+    brasilapi-url: ${CEP_BRASILAPI_URL:https://brasilapi.com.br}
+    viacep-url: ${CEP_VIACEP_URL:https://viacep.com.br}
+    connect-timeout: PT2S
+    read-timeout: PT3S

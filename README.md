@@ -12,9 +12,9 @@ Quem quer jogar perde tempo ligando para quadras para descobrir horário livre e
 
 | Componente | Versão fixada | Onde |
 |---|---|---|
-| JDK | 21 LTS (Temurin); Java 25 também funciona | backend e Android |
-| Spring Boot | 4.1.x (4.1.1 em 01/09/2026): Spring Framework 7, Spring Security 7.1, Hibernate 7, Jackson 3 (`tools.jackson.*`) | `backend/build.gradle.kts` |
-| Starters | `starter-webmvc`, `data-jpa`, `security`, `oauth2-resource-server` (JWT HS256 via Nimbus), `validation`, `flyway` + `flyway-database-postgresql`, `spring-boot-docker-compose` (dev) | `backend/build.gradle.kts` |
+| JDK | 25 LTS no backend (`java.version` 25 no `pom.xml`); 21 LTS (Temurin) no Android | backend e Android |
+| Spring Boot | 4.1.x (4.1.1 em 01/09/2026): Spring Framework 7, Spring Security 7.1, Hibernate 7, Jackson 3 (`tools.jackson.*`) | `backend/pom.xml` (Maven, parent `spring-boot-starter-parent:4.1.1`) |
+| Starters | `starter-webmvc`, `data-jpa`, `security`, `security-oauth2-resource-server` (JWT HS256 via Nimbus), `validation`, `flyway` + `flyway-database-postgresql`, `actuator`, `restclient`, `spring-boot-docker-compose` (dev) | `backend/pom.xml` |
 | springdoc-openapi | 3.1.0 (`springdoc-openapi-starter-webmvc-ui`) | Swagger |
 | PostgreSQL | 18 (`postgres:18-alpine`); driver 42.7.12 gerenciado pelo Boot; Flyway >= 12.4 gerenciado pelo Boot | `backend/compose.yaml` |
 | Testes backend | JUnit 5, `spring-boot-starter-webmvc-test`, Testcontainers 2.x (`testcontainers-postgresql`), Mockito (`@MockitoBean`) | `backend/src/test` |
@@ -40,14 +40,14 @@ Por que estas escolhas: [docs/09-arquitetura.md](docs/09-arquitetura.md). O que 
 
 ```text
 so-mais-uma/
-├── backend/                 # Spring Boot 4.1 (Java, Gradle Kotlin DSL)
-│   ├── src/main/java/br/com/somaisuma/{config,security,controller,service,repository,entity,dto,exception,integracao}
+├── backend/                 # Spring Boot 4.1 (Java 25, Maven: pom.xml + mvnw)
+│   ├── src/main/java/br/com/puc/so_mais_uma/{config,security,controller,service,repository,entity,dto,exception,integracao}
 │   ├── src/main/resources/{application.yml,application-simulado.yml,application-inter-sandbox.yml,application-inter-prod.yml}
 │   ├── src/main/resources/db/migration/V1__init.sql
 │   ├── src/main/resources/db/migration/     # V1__init.sql e as migrations seguintes (V2, V3, ...)
 │   ├── src/test/java/...    # *Test (unitários, @WebMvcTest) e *IT (Testcontainers)
 │   ├── compose.yaml         # postgres:18-alpine
-│   ├── Dockerfile           # multi-stage, eclipse-temurin:21-jre (Render)
+│   ├── Dockerfile           # multi-stage, eclipse-temurin:25-jdk -> eclipse-temurin:25-jre (Render)
 │   └── .env.exemplo
 ├── android/                 # app Kotlin + Jetpack Compose
 │   ├── app/src/main/java/br/com/somaisuma/app/{di,data,model,ui,util}
@@ -77,28 +77,39 @@ git clone https://github.com/<org>/so-mais-uma.git
 cd so-mais-uma/backend
 cp .env.exemplo .env            # edite JWT_SECRET e DEV_KEY (sem commitar o .env)
 docker compose up -d            # sobe o PostgreSQL 18 (porta 5432)
-./gradlew bootRun               # profile padrão: simulado (usa o .env via spring.config.import ou export)
+./mvnw spring-boot:run          # profile padrão: simulado (lê o .env via spring.config.import)
 ```
 
-No Windows use `gradlew.bat bootRun`. O `spring-boot-docker-compose` também sobe o banco sozinho ao rodar `bootRun`, então o `docker compose up -d` é opcional em dev. Flyway aplica `db/migration/V1__init.sql` (5 tabelas + índice único parcial) no primeiro start. Toda evolução de esquema começa em `V3__...`.
+No Windows use `mvnw.cmd spring-boot:run`. O `spring-boot-docker-compose` também sobe o banco sozinho ao rodar `spring-boot:run`, então o `docker compose up -d` é opcional em dev. Flyway aplica `db/migration/V1__init.sql` (5 tabelas + índice único parcial) no primeiro start. Toda evolução de esquema começa em `V3__...`.
 
 `backend/.env.exemplo` (valores de exemplo, nunca reais):
 
 ```properties
+# Copie para .env (nunca versionado). A aplicação lê este arquivo como propriedades
+# (spring.config.import=optional:file:.env[.properties]); ele não passa por shell, então
+# use caminhos absolutos. Valores abaixo são apenas exemplos.
+
 # obrigatórias em qualquer profile
-spring.profiles.active=simulado          # simulado | inter-sandbox | inter-prod
+# simulado | inter-sandbox | inter-prod
+spring.profiles.active=simulado
 JWT_SECRET=troque-por-uma-string-aleatoria-com-32-bytes-ou-mais
-DEV_KEY=troque-por-uma-chave-do-endpoint-dev   # header X-Dev-Key de POST /api/v1/dev/pagamentos/{txid}/confirmar
+# header X-Dev-Key de POST /api/v1/dev/pagamentos/{txid}/confirmar
+DEV_KEY=troque-por-uma-chave-do-endpoint-dev
 
 # profile simulado
-SIMULADO_PIX_CHAVE=chave-pix-ficticia@somaisuma.local   # chave usada no payload BR Code do SimuladoPixGateway
-SIMULADO_PIX_NOME=SO MAIS UMA                           # nome do recebedor no payload BR Code
-SIMULADO_PIX_CIDADE=SAO PAULO                           # cidade do recebedor no payload BR Code
-# SIMULADO_AUTO_CONFIRMAR_SEGUNDOS=                     # confirmação automática do pagamento simulado
+# chave usada no payload BR Code do SimuladoPixGateway
+SIMULADO_PIX_CHAVE=chave-pix-ficticia@somaisuma.local
+# nome do recebedor no payload BR Code
+SIMULADO_PIX_NOME=SO MAIS UMA
+# cidade do recebedor no payload BR Code
+SIMULADO_PIX_CIDADE=BELO HORIZONTE
 
 # opcionais (têm padrão na aplicação)
 # JWT_VALIDADE_DIAS=7
 # APP_FUSO_HORARIO=America/Sao_Paulo
+# prazo de pagamento da reserva (reduzir só em testes)
+# RESERVA_PRAZO_PAGAMENTO=PT15M
+# PORT=8080
 
 # banco fora do docker compose (Render/Neon ou Postgres local próprio)
 # spring.datasource.url=jdbc:postgresql://localhost:5432/somaisuma
@@ -106,18 +117,19 @@ SIMULADO_PIX_CIDADE=SAO PAULO                           # cidade do recebedor no
 # spring.datasource.password=somaisuma
 
 # profiles inter-sandbox / inter-prod (só quem tem os arquivos; ver docs/11)
-# caminho absoluto: este arquivo não passa por shell, então $HOME e ~ ficariam literais
 # INTER_CLIENT_ID=
 # INTER_CLIENT_SECRET=
 # INTER_CRT=/home/<usuario>/.somaisuma/inter-sandbox.crt
 # INTER_KEY=/home/<usuario>/.somaisuma/inter-sandbox.key
 # no Windows: C:/Users/<usuario>/.somaisuma/inter-sandbox.crt
 # INTER_CHAVE_PIX=
-# INTER_WEBHOOK_SEGREDO=            # segmento secreto da URL de callback (UUID sem hifens); só se o webhook for cadastrado
+# segmento secreto da URL de callback (UUID sem hifens)
+# INTER_WEBHOOK_SEGREDO=
 # INTER_ESCOPOS=cob.write cob.read pix.read pix.write webhook.write webhook.read
+# INTER_BASE_URL=https://cdpj-sandbox.partners.uatinter.co
 ```
 
-O `.env` é carregado pela aplicação como arquivo de propriedades (`spring.config.import=optional:file:.env[.properties]`), não é interpretado por um shell: por isso os caminhos são absolutos e as propriedades do Spring aparecem na forma canônica com pontos e minúsculas. As versões em maiúsculas com sublinhado (`SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) só recebem a conversão automática de nome quando são variáveis de ambiente de verdade — use-as no `export` do shell e no painel do Render; dentro do arquivo, valem as chaves com pontos. As demais chaves (`JWT_SECRET`, `DEV_KEY`, `INTER_*`) são lidas por placeholder `${...}` nos `application*.yml` e funcionam igual nos dois lugares.
+O `.env` é carregado pela aplicação como arquivo de propriedades (`spring.config.import=optional:file:.env[.properties]`), não é interpretado por um shell: por isso os caminhos são absolutos, os comentários ficam em linha própria (em `.properties`, um `#` no meio da linha vira parte do valor) e as propriedades do Spring aparecem na forma canônica com pontos e minúsculas. As versões em maiúsculas com sublinhado (`SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) só recebem a conversão automática de nome quando são variáveis de ambiente de verdade — use-as no `export` do shell e no painel do Render; dentro do arquivo, valem as chaves com pontos. As demais chaves (`JWT_SECRET`, `DEV_KEY`, `INTER_*`) são lidas por placeholder `${...}` nos `application*.yml` e funcionam igual nos dois lugares.
 
 Após subir:
 
@@ -176,16 +188,16 @@ Instalação sempre via `adb`: desde 30/09/2026 a verificação de desenvolvedor
 
 ```bash
 # backend: unitários + @WebMvcTest + integração (Testcontainers exige Docker rodando)
-cd backend && ./gradlew test
+cd backend && ./mvnw verify
 # só a corrida de 10 threads no mesmo slot (1x201, 9x409)
-cd backend && ./gradlew test --tests '*ReservaConcorrenciaIT'
+cd backend && ./mvnw verify -Dtest=NONE -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=ReservaConcorrenciaIT
 # android: ViewModels e utilitários na JVM
 cd android && ./gradlew testDebugUnitTest
 # android (opcional, exige emulador): teste de DAO do Room
 cd android && ./gradlew connectedDebugAndroidTest
 ```
 
-Relatórios em `backend/build/reports/tests/test/index.html` e `android/app/build/reports/tests/testDebugUnitTest/index.html`. Casos de teste manuais CT-01..CT-30, o que roda no CI e critérios de saída: [docs/23-plano-de-testes.md](docs/23-plano-de-testes.md). Testes com usuários (SUS): [docs/22-testes-com-usuarios.md](docs/22-testes-com-usuarios.md).
+Relatórios em `backend/target/surefire-reports/` e `backend/target/failsafe-reports/` e `android/app/build/reports/tests/testDebugUnitTest/index.html`. Casos de teste manuais CT-01..CT-30, o que roda no CI e critérios de saída: [docs/23-plano-de-testes.md](docs/23-plano-de-testes.md). Testes com usuários (SUS): [docs/22-testes-com-usuarios.md](docs/22-testes-com-usuarios.md).
 
 ## Profiles Spring e pagamento Pix
 
@@ -211,7 +223,7 @@ export INTER_KEY="$HOME/.somaisuma/inter-sandbox.key"
 curl --cert "$INTER_CRT" --key "$INTER_KEY" -X POST https://cdpj-sandbox.partners.uatinter.co/oauth/v2/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d "client_id=$INTER_CLIENT_ID&client_secret=$INTER_CLIENT_SECRET&grant_type=client_credentials&scope=cob.write cob.read pix.read pix.write webhook.write webhook.read"
-./gradlew bootRun
+./mvnw spring-boot:run
 ```
 
 O `.gitignore` bloqueia `*.crt`, `*.key`, `*.pfx` e `.env`; no Render os arquivos entram como Secret Files e as variáveis no painel. Escopos, fluxo de cobrança, webhook (recomendado), rate limits, gates datados e limitações: [docs/11-integracao-pix-inter.md](docs/11-integracao-pix-inter.md).
