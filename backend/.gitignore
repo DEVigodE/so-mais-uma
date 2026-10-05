@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Segredos (nunca versionar) ###
+*.crt
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+.env

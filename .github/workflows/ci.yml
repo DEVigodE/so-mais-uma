@@ -1,0 +1,55 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  segredos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bloqueia certificados, chaves e .env versionados
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env(\..*)?|.*\.(key|crt|pem|pfx|p12|jks|keystore))$' | grep -v '\.env\.exemplo$'; then
+            echo 'Segredo versionado encontrado'; exit 1; fi
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '25', cache: maven }
+      - name: Build e testes (Testcontainers usa o Docker do runner)
+        run: chmod +x mvnw && ./mvnw -B verify
+        env:
+          SPRING_PROFILES_ACTIVE: simulado
+          JWT_SECRET: ci-somente-teste-chave-com-mais-de-32-bytes-0123
+          DEV_KEY: ci-dev-key
+      - name: Relatórios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-backend
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+
+  android:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: . } }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Módulo Android ainda não existe
+        if: hashFiles('android/gradlew') == ''
+        run: echo "Sem android/gradlew no repositório; job ignorado até o módulo ser criado."
+      - uses: actions/setup-java@v4
+        if: hashFiles('android/gradlew') != ''
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+        if: hashFiles('android/gradlew') != ''
+      - name: Testes unitários e APK debug
+        if: hashFiles('android/gradlew') != ''
+        working-directory: android
+        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon

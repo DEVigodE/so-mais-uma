@@ -1,0 +1,2129 @@
+{
+  "components": {
+    "schemas": {
+      "AtualizarHorarioRequest": {
+        "properties": {
+          "horaAbertura": {
+            "type": "string"
+          },
+          "horaFechamento": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "horaAbertura",
+          "horaFechamento"
+        ],
+        "type": "object"
+      },
+      "AtualizarReservaRequest": {
+        "properties": {
+          "observacao": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AtualizarUsuarioRequest": {
+        "properties": {
+          "nome": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "novaSenha": {
+            "pattern": "^(?=.*[A-Za-z])(?=.*\\d).{8,72}$",
+            "type": "string"
+          },
+          "senhaAtual": {
+            "type": "string"
+          },
+          "telefone": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "nome"
+        ],
+        "type": "object"
+      },
+      "CancelarReservaRequest": {
+        "properties": {
+          "motivo": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CepResponse": {
+        "properties": {
+          "bairro": {
+            "type": "string"
+          },
+          "cep": {
+            "type": "string"
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "fonte": {
+            "enum": [
+              "BRASILAPI",
+              "VIACEP"
+            ],
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "uf": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CriarReservaRequest": {
+        "properties": {
+          "inicio": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "observacao": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "quadraId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "inicio",
+          "quadraId"
+        ],
+        "type": "object"
+      },
+      "HorarioFuncionamentoRequest": {
+        "properties": {
+          "diaSemana": {
+            "format": "int32",
+            "maximum": 7,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "horaAbertura": {
+            "type": "string"
+          },
+          "horaFechamento": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "diaSemana",
+          "horaAbertura",
+          "horaFechamento"
+        ],
+        "type": "object"
+      },
+      "HorarioFuncionamentoResponse": {
+        "properties": {
+          "diaSemana": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "horaAbertura": {
+            "type": "string"
+          },
+          "horaFechamento": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quadraId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "senha": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "senha"
+        ],
+        "type": "object"
+      },
+      "PagamentoResponse": {
+        "properties": {
+          "expiraEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pagoEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pixCopiaECola": {
+            "type": "string"
+          },
+          "provedor": {
+            "enum": [
+              "INTER",
+              "SIMULADO"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDENTE",
+              "PAGO",
+              "EXPIRADO",
+              "CANCELADO"
+            ],
+            "type": "string"
+          },
+          "txid": {
+            "type": "string"
+          },
+          "valor": {
+            "example": "80.00",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "QuadraRequest": {
+        "properties": {
+          "bairro": {
+            "maxLength": 80,
+            "minLength": 0,
+            "type": "string"
+          },
+          "cep": {
+            "pattern": "\\d{8}",
+            "type": "string"
+          },
+          "cidade": {
+            "maxLength": 80,
+            "minLength": 0,
+            "type": "string"
+          },
+          "descricao": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "fotoUrl": {
+            "maxLength": 300,
+            "minLength": 0,
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "maximum": 90,
+            "minimum": -90,
+            "type": "number"
+          },
+          "logradouro": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "longitude": {
+            "format": "double",
+            "maximum": 180,
+            "minimum": -180,
+            "type": "number"
+          },
+          "nome": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "numero": {
+            "maxLength": 10,
+            "minLength": 0,
+            "type": "string"
+          },
+          "precoHora": {
+            "example": "80.00",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "type": "string"
+          },
+          "tipoEsporte": {
+            "enum": [
+              "FUTEBOL_SOCIETY",
+              "FUTSAL",
+              "VOLEI",
+              "BASQUETE",
+              "TENIS",
+              "BEACH_TENNIS",
+              "PADEL"
+            ],
+            "type": "string"
+          },
+          "uf": {
+            "pattern": "[A-Z]{2}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cep",
+          "cidade",
+          "logradouro",
+          "nome",
+          "numero",
+          "precoHora",
+          "tipoEsporte",
+          "uf"
+        ],
+        "type": "object"
+      },
+      "QuadraResponse": {
+        "properties": {
+          "ativa": {
+            "type": "boolean"
+          },
+          "atualizadoEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "bairro": {
+            "type": "string"
+          },
+          "cep": {
+            "type": "string"
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "donoId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "fotoUrl": {
+            "type": "string"
+          },
+          "horariosFuncionamento": {
+            "items": {
+              "$ref": "#/components/schemas/HorarioFuncionamentoResponse"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "string"
+          },
+          "precoHora": {
+            "example": "80.00",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "type": "string"
+          },
+          "tipoEsporte": {
+            "enum": [
+              "FUTEBOL_SOCIETY",
+              "FUTSAL",
+              "VOLEI",
+              "BASQUETE",
+              "TENIS",
+              "BEACH_TENNIS",
+              "PADEL"
+            ],
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RegistrarRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "nome": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "perfil": {
+            "enum": [
+              "CLIENTE",
+              "DONO"
+            ],
+            "type": "string"
+          },
+          "senha": {
+            "pattern": "^(?=.*[A-Za-z])(?=.*\\d).{8,72}$",
+            "type": "string"
+          },
+          "telefone": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "nome",
+          "perfil",
+          "senha"
+        ],
+        "type": "object"
+      },
+      "ReservaResponse": {
+        "properties": {
+          "canceladoEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "canceladoPor": {
+            "enum": [
+              "CLIENTE",
+              "DONO",
+              "SISTEMA"
+            ],
+            "type": "string"
+          },
+          "clienteId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "clienteNome": {
+            "type": "string"
+          },
+          "clienteTelefone": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiraEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fim": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inicio": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "motivoCancelamento": {
+            "type": "string"
+          },
+          "observacao": {
+            "type": "string"
+          },
+          "pagamento": {
+            "$ref": "#/components/schemas/PagamentoResponse"
+          },
+          "quadraEndereco": {
+            "type": "string"
+          },
+          "quadraId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quadraNome": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDENTE_PAGAMENTO",
+              "CONFIRMADA",
+              "CANCELADA",
+              "EXPIRADA"
+            ],
+            "type": "string"
+          },
+          "valor": {
+            "example": "80.00",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SlotResponse": {
+        "properties": {
+          "fim": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "inicio": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "LIVRE",
+              "OCUPADO",
+              "PASSADO",
+              "FECHADO"
+            ],
+            "type": "string"
+          },
+          "valor": {
+            "example": "80.00",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "expiraEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioResponse"
+          }
+        },
+        "type": "object"
+      },
+      "UsuarioResponse": {
+        "properties": {
+          "criadoEm": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "perfil": {
+            "enum": [
+              "CLIENTE",
+              "DONO"
+            ],
+            "type": "string"
+          },
+          "telefone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Reserva de quadras esportivas com pagamento Pix.",
+    "title": "SÃ³ mais uma â€” API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: CREDENCIAL_INVALIDA"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: LOGIN_BLOQUEADO"
+          }
+        },
+        "security": [],
+        "summary": "Entra com e-mail e senha",
+        "tags": [
+          "Autenticacao"
+        ]
+      }
+    },
+    "/api/v1/auth/registrar": {
+      "post": {
+        "operationId": "registrar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: EMAIL_JA_CADASTRADO"
+          }
+        },
+        "security": [],
+        "summary": "Cria a conta e jÃ¡ devolve o token (auto-login)",
+        "tags": [
+          "Autenticacao"
+        ]
+      }
+    },
+    "/api/v1/cep/{cep}": {
+      "get": {
+        "operationId": "consultar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cep",
+            "required": true,
+            "schema": {
+              "pattern": "\\d{8}",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CepResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: CEP_INDISPONIVEL"
+          }
+        },
+        "summary": "EndereÃ§o e coordenadas a partir do CEP (8 dÃ­gitos)",
+        "tags": [
+          "CEP"
+        ]
+      }
+    },
+    "/api/v1/dev/pagamentos/{txid}/confirmar": {
+      "post": {
+        "operationId": "confirmar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Dev-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagamentoResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: PAGAMENTO_INDISPONIVEL"
+          }
+        },
+        "summary": "Simula o pagamento da cobranÃ§a (exige X-Dev-Key e ser o cliente da reserva)",
+        "tags": [
+          "Dev"
+        ]
+      }
+    },
+    "/api/v1/quadras": {
+      "get": {
+        "operationId": "listar_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "esporte",
+            "required": false,
+            "schema": {
+              "enum": [
+                "FUTEBOL_SOCIETY",
+                "FUTSAL",
+                "VOLEI",
+                "BASQUETE",
+                "TENIS",
+                "BEACH_TENNIS",
+                "PADEL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cidade",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuadraResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          }
+        },
+        "summary": "Lista quadras ativas, com filtro opcional por esporte e cidade",
+        "tags": [
+          "Quadras"
+        ]
+      },
+      "post": {
+        "operationId": "criar_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuadraRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuadraResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          }
+        },
+        "summary": "Cria uma quadra; o dono Ã© o usuÃ¡rio autenticado",
+        "tags": [
+          "Quadras"
+        ]
+      }
+    },
+    "/api/v1/quadras/minhas": {
+      "get": {
+        "operationId": "minhas",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuadraResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          }
+        },
+        "summary": "Quadras do DONO autenticado, inclusive as inativas",
+        "tags": [
+          "Quadras"
+        ]
+      }
+    },
+    "/api/v1/quadras/{id}": {
+      "delete": {
+        "operationId": "desativar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: QUADRA_COM_RESERVAS"
+          }
+        },
+        "summary": "Desativa a quadra (exclusÃ£o lÃ³gica)",
+        "tags": [
+          "Quadras"
+        ]
+      },
+      "get": {
+        "operationId": "detalhar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuadraResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Detalhe da quadra com os horÃ¡rios de funcionamento",
+        "tags": [
+          "Quadras"
+        ]
+      },
+      "put": {
+        "operationId": "atualizar_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuadraRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuadraResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Edita a quadra (apenas o dono)",
+        "tags": [
+          "Quadras"
+        ]
+      }
+    },
+    "/api/v1/quadras/{quadraId}/horarios-funcionamento": {
+      "get": {
+        "operationId": "listar_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HorarioFuncionamentoResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Lista as faixas da quadra (0 a 7; dia ausente = fechado)",
+        "tags": [
+          "HorariosFuncionamento"
+        ]
+      },
+      "post": {
+        "operationId": "criar_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HorarioFuncionamentoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioFuncionamentoResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: DIA_JA_CADASTRADO"
+          }
+        },
+        "summary": "Cria a faixa de um dia da semana",
+        "tags": [
+          "HorariosFuncionamento"
+        ]
+      }
+    },
+    "/api/v1/quadras/{quadraId}/horarios-funcionamento/{horarioId}": {
+      "delete": {
+        "operationId": "remover",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "horarioId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: HORARIO_COM_RESERVAS"
+          }
+        },
+        "summary": "Remove a faixa (o dia passa a fechado)",
+        "tags": [
+          "HorariosFuncionamento"
+        ]
+      },
+      "put": {
+        "operationId": "atualizar_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "horarioId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarHorarioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioFuncionamentoResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: HORARIO_COM_RESERVAS"
+          }
+        },
+        "summary": "Altera abertura e fechamento de uma faixa",
+        "tags": [
+          "HorariosFuncionamento"
+        ]
+      }
+    },
+    "/api/v1/quadras/{quadraId}/reservas": {
+      "get": {
+        "operationId": "agenda",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "data",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Agenda da quadra para o dono: da data informada ou as prÃ³ximas",
+        "tags": [
+          "Reservas"
+        ]
+      }
+    },
+    "/api/v1/quadras/{quadraId}/slots": {
+      "get": {
+        "operationId": "grade",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quadraId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "data",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SlotResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          }
+        },
+        "summary": "Grade de slots de 60 min da data (hoje atÃ© hoje + 14), calculada e nÃ£o persistida",
+        "tags": [
+          "Slots"
+        ]
+      }
+    },
+    "/api/v1/reservas": {
+      "get": {
+        "operationId": "listar",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "situacao",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PROXIMAS",
+                "HISTORICO"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          }
+        },
+        "summary": "Reservas do cliente ou das quadras do dono, por inÃ­cio (Ãºltimos 12 meses)",
+        "tags": [
+          "Reservas"
+        ]
+      },
+      "post": {
+        "operationId": "criar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarReservaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: HORARIO_INDISPONIVEL"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: PAGAMENTO_INDISPONIVEL"
+          }
+        },
+        "summary": "Reserva um slot (PENDENTE_PAGAMENTO) e devolve a cobranÃ§a Pix",
+        "tags": [
+          "Reservas"
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}": {
+      "get": {
+        "operationId": "detalhar_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Detalhe da reserva com a cobranÃ§a",
+        "tags": [
+          "Reservas"
+        ]
+      },
+      "patch": {
+        "operationId": "atualizar_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarReservaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          }
+        },
+        "summary": "Altera apenas a observaÃ§Ã£o de uma reserva ativa",
+        "tags": [
+          "Reservas"
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}/cancelar": {
+      "post": {
+        "operationId": "cancelar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarReservaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          }
+        },
+        "summary": "Cancela a reserva (cliente atÃ© 2 h antes se confirmada; dono atÃ© o inÃ­cio, com motivo)",
+        "tags": [
+          "Reservas"
+        ]
+      }
+    },
+    "/api/v1/reservas/{reservaId}/pagamento": {
+      "get": {
+        "operationId": "estado",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reservaId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagamentoResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: ACESSO_NEGADO"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: NAO_ENCONTRADO"
+          }
+        },
+        "summary": "Estado atual da cobranÃ§a, para o polling do app",
+        "tags": [
+          "Pagamentos"
+        ]
+      }
+    },
+    "/api/v1/usuarios/me": {
+      "get": {
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          }
+        },
+        "summary": "Dados do usuÃ¡rio autenticado",
+        "tags": [
+          "Usuarios"
+        ]
+      },
+      "put": {
+        "operationId": "atualizar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarUsuarioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: VALIDACAO"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: TOKEN_INVALIDO"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {}
+              }
+            },
+            "description": "ProblemDetail com codigo: REGRA_NEGOCIO"
+          }
+        },
+        "summary": "Edita nome, telefone e, opcionalmente, a senha (e-mail e perfil nÃ£o mudam)",
+        "tags": [
+          "Usuarios"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "servers": [
+    {
+      "description": "desenvolvimento",
+      "url": "http://localhost:8080"
+    }
+  ]
+}
