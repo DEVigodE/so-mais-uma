@@ -2,6 +2,8 @@
 
 Lista completa dos 24 requisitos funcionais (RF01..RF24) do app "Só mais uma", agrupados por módulo, com prioridade, perfil, telas, endpoints, critério de aceite e a tabela de rastreabilidade RF → tela → endpoint → integrante. Este arquivo é a referência oficial de identificadores: qualquer outro documento cita "RF13" com o significado definido aqui.
 
+Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter; nenhum RF mudou de número, enunciado de negócio, prioridade ou responsável — só os componentes do app citados nas tabelas e nos critérios de aceite.
+
 ## Convenções
 
 | Item | Convenção |
@@ -31,7 +33,7 @@ Resumo por prioridade:
 |---|---|---|---|
 | Must Have (N1) | público | `Cadastro` | `POST /api/v1/auth/registrar` → 201 `TokenResponse{token, expiraEm, usuario}`; 400 `VALIDACAO`; 409 `EMAIL_JA_CADASTRADO` |
 
-Critério de aceite: preencher o formulário com senha válida (RNF01) e perfil DONO cria a linha em `usuario` com `perfil='DONO'`, grava o token em `SessaoDataStore` e abre `HomeDono` sem passar por `Login`; repetir o mesmo e-mail devolve 409 e a tela mostra "E-mail já cadastrado" no campo. Regras: RN20 (e-mail único, perfil imutável).
+Critério de aceite: preencher o formulário com senha válida (RNF01) e perfil DONO cria a linha em `usuario` com `perfil='DONO'`, grava o token no `SessaoStore` e abre a home do dono (`/dono/quadras`) sem passar por `Login`; repetir o mesmo e-mail devolve 409 e a tela mostra "E-mail já cadastrado" no campo. Regras: RN20 (e-mail único, perfil imutável).
 
 ### RF02 — O sistema deve permitir login por e-mail e senha, devolvendo um token JWT (HS256, 7 dias) com o perfil do usuário.
 
@@ -39,15 +41,15 @@ Critério de aceite: preencher o formulário com senha válida (RNF01) e perfil 
 |---|---|---|---|
 | Must Have (N1) | público | `Login` | `POST /api/v1/auth/login` → 200 `TokenResponse`; 401 `CREDENCIAL_INVALIDA`; 429 `LOGIN_BLOQUEADO` (RF04) |
 
-Critério de aceite: `cliente@demo.com` / `Senha123` (seed `scripts/seed-demo.sql`) recebe 200 e o app abre `HomeCliente` com a bottom-nav Quadras | Reservas | Perfil; `dono@demo.com` abre `HomeDono` com MinhasQuadras | Reservas | Perfil; senha errada mostra "E-mail ou senha inválidos" sem sair da tela.
+Critério de aceite: `cliente@demo.com` / `Senha123` (seed `scripts/seed-demo.sql`) recebe 200 e o app abre `/quadras` (shell CLIENTE) com a bottom-nav Quadras | Reservas | Perfil; `dono@demo.com` abre `/dono/quadras` (shell DONO) com MinhasQuadras | Reservas | Perfil; senha errada mostra "E-mail ou senha inválidos" sem sair da tela.
 
-### RF03 — O sistema deve permitir manter a sessão no dispositivo entre aberturas do app e sair (logout), limpando o DataStore e o banco Room local.
+### RF03 — O sistema deve permitir manter a sessão no dispositivo entre aberturas do app e sair (logout), limpando a sessão local (`SessaoStore`) e o banco local (drift).
 
 | Prioridade | Perfil | Tela(s) | Endpoint(s) |
 |---|---|---|---|
 | Must Have (N1) | CLIENTE, DONO | `Splash`, `Perfil` | nenhum (local); qualquer 401 `TOKEN_INVALIDO` em rota protegida também encerra a sessão |
 
-Critério de aceite: fechar e reabrir o app com token válido vai direto para a home do perfil sem chamar a API (`Splash` lê `token_jwt` e `token_expira_em`; se faltar menos de 5 min para expirar, vai para `Login`); tocar "Sair" em `Perfil` executa `SessaoDataStore.clear()` + `AppDatabase.clearAllTables()` e navega para `Login` com `popUpTo(0)`; um 401 em rota protegida gera um único evento `SessaoExpirada` (sem retry, sem loop). Ver RNF03.
+Critério de aceite: fechar e reabrir o app com token válido vai direto para a home do perfil sem chamar a API (`Splash` lê `token_jwt` e `token_expira_em`; se faltar menos de 5 min para expirar, vai para `Login`); tocar "Sair" em `Perfil` executa `SessaoStore.limpar()` + `AppDatabase.limparTudo()` e o `redirect` do `GoRouter` leva a `/login` com a pilha zerada; um 401 em rota protegida dispara uma única limpeza da sessão, seguida do mesmo `redirect` (sem retry, sem loop). Ver RNF03.
 
 ### RF04 — O sistema deve bloquear novas tentativas de login de um e-mail por 15 minutos após 5 falhas consecutivas.
 
@@ -99,7 +101,7 @@ Critério de aceite: a tela exibe nome, esporte, descrição, preço/hora, `logr
 |---|---|---|---|
 | Must Have (N1) | DONO | `FormQuadra` | `GET /api/v1/cep/{cep}` → 200 `CepResponse{cep, logradouro, bairro, cidade, uf, latitude?, longitude?}`; 404 (CEP inexistente); 503 `CEP_INDISPONIVEL` (as duas APIs falharam) |
 
-Critério de aceite: digitar `01001000` e tocar "Buscar" preenche Praça da Sé / Sé / São Paulo / SP e lat/lon `-23.5503898, -46.633081`; se BrasilAPI falhar, `CepClient` chama ViaCEP e preenche o endereço sem coordenadas, deixando lat/lon editáveis; o Android nunca chama BrasilAPI/ViaCEP diretamente (só o backend, `CepController`). Esta é a segunda API externa exigida pelo critério 4 e garante o critério mesmo se o sandbox Inter falhar (docs/19-riscos.md, R2). Teste `CepClientTest` com `MockRestServiceServer` cobre o fallback.
+Critério de aceite: digitar `01001000` e tocar "Buscar" preenche Praça da Sé / Sé / São Paulo / SP e lat/lon `-23.5503898, -46.633081`; se BrasilAPI falhar, `CepClient` chama ViaCEP e preenche o endereço sem coordenadas, deixando lat/lon editáveis; o app nunca chama BrasilAPI/ViaCEP diretamente (só o backend, `CepController`). Esta é a segunda API externa exigida pelo critério 4 e garante o critério mesmo se o sandbox Inter falhar (docs/19-riscos.md, R2). Teste `CepClientTest` com `MockRestServiceServer` cobre o fallback.
 
 ### RF10 — O sistema deve impedir a desativação de uma quadra que tenha reservas ativas (PENDENTE_PAGAMENTO ou CONFIRMADA) com início no futuro, respondendo 409.
 
@@ -185,7 +187,7 @@ Critério de aceite: o dono do seed vê a reserva CONFIRMADA de amanhã com `cli
 |---|---|---|---|
 | Must Have (N2); backend pronto na N1 (profile `simulado` via Swagger); Pix em produção = Should Have | CLIENTE | `Pagamento` | incluído na resposta de `POST /api/v1/reservas` (`pagamento{txid, pixCopiaECola, valor, expiraEm, status}`); `GET /api/v1/reservas/{id}/pagamento` → 200; 502 `PAGAMENTO_INDISPONIVEL` na criação |
 
-Critério de aceite: após o 201 a tela mostra o QR gerado localmente do `pixCopiaECola` (ZXing core 3.5.4), o valor, o botão "Copiar código" (`ClipboardManager`) e o contador regressivo até `expiraEm`; no profile `inter-sandbox` a cobrança existe no Inter (`GET /pix/v2/cob/{txid}` → `ATIVA`) com `txid` = UUID sem hífens (32 chars); no profile `simulado` o payload BR Code estático gerado por `PixPayloadBuilder` passa no `PixPayloadBuilderTest` (CRC16-CCITT contra payload conhecido) e é reconhecido por um app de banco; se o gateway falhar, a reserva é cancelada por SISTEMA e o app mostra "Não foi possível gerar a cobrança, tente novamente" (RN17). Detalhes em docs/11-integracao-pix-inter.md. Regras: RN10, RN17, RN18. Segurança: RNF02.
+Critério de aceite: após o 201 a tela mostra o QR gerado localmente do `pixCopiaECola` (`QrImageView` do qr_flutter 4.1.0, no componente `PixQrCode`), o valor, o botão "Copiar código" (`Clipboard.setData`) e o contador regressivo até `expiraEm`; no profile `inter-sandbox` a cobrança existe no Inter (`GET /pix/v2/cob/{txid}` → `ATIVA`) com `txid` = UUID sem hífens (32 chars); no profile `simulado` o payload BR Code estático gerado por `PixPayloadBuilder` passa no `PixPayloadBuilderTest` (CRC16-CCITT contra payload conhecido) e é reconhecido por um app de banco; se o gateway falhar, a reserva é cancelada por SISTEMA e o app mostra "Não foi possível gerar a cobrança, tente novamente" (RN17). Detalhes em docs/11-integracao-pix-inter.md. Regras: RN10, RN17, RN18. Segurança: RNF02.
 
 ### RF20 — O sistema deve confirmar o pagamento automaticamente (polling do app + job do backend; webhook do Inter recomendado) e mudar a reserva para CONFIRMADA de forma idempotente.
 
@@ -199,7 +201,7 @@ Critério de aceite: ao pagar no sandbox (ou simular, RF21) o status na tela pas
 
 | Prioridade | Perfil | Tela(s) | Endpoint(s) |
 |---|---|---|---|
-| Must Have (N2) | CLIENTE (JWT) + header `X-Dev-Key` | `Pagamento` (botão "Simular pagamento", só em `BuildConfig.DEBUG`) | `POST /api/v1/dev/pagamentos/{txid}/confirmar` → 200; 404; profiles `simulado` (marca PAGO) e `inter-sandbox` (repassa para `POST /pix/v2/cob/pagar/{txid}` no sandbox, escopo `pix.write`); ausente em `inter-prod` |
+| Must Have (N2) | CLIENTE (JWT) + header `X-Dev-Key` | `Pagamento` (botão "Simular pagamento", só quando `kDebugMode && Ambiente.devKey.isNotEmpty`) | `POST /api/v1/dev/pagamentos/{txid}/confirmar` → 200; 404; profiles `simulado` (marca PAGO) e `inter-sandbox` (repassa para `POST /pix/v2/cob/pagar/{txid}` no sandbox, escopo `pix.write`); ausente em `inter-prod` |
 
 Critério de aceite: em `simulado`, o botão confirma em menos de 5 s (próximo ciclo do polling); em `inter-sandbox`, o botão faz o sandbox marcar a cobrança como `CONCLUIDA` e o `ConsultaPagamentoJob` detecta e confirma em até 60 s; sem `X-Dev-Key` → 403; com `SPRING_PROFILES_ACTIVE=inter-prod` a rota não existe (404). Opcional: `simulado.auto-confirmar-segundos=20`.
 
@@ -209,13 +211,13 @@ Critério de aceite: em `simulado`, o botão confirma em menos de 5 s (próximo 
 
 | Prioridade | Perfil | Tela(s) | Endpoint(s) |
 |---|---|---|---|
-| Must Have (N2) | CLIENTE (o DONO só vê a distância se alcançar a lista pelo link Could Have do `Perfil`) | `Quadras` (card "Ativar localização", "a 2,3 km", ordenação), `DetalheQuadra` ("Abrir no Maps") | nenhum novo: usa `latitude`/`longitude` de `GET /api/v1/quadras`; `FusedLocationProviderClient.getCurrentLocation` (`play-services-location 21.4.0`); `Intent(ACTION_VIEW, "geo:lat,lon?q=lat,lon(Nome)")` |
+| Must Have (N2) | CLIENTE (o DONO só vê a distância se alcançar a lista pelo link Could Have do `Perfil`) | `Quadras` (card "Ativar localização", "a 2,3 km", ordenação), `DetalheQuadra` ("Abrir no Maps") | nenhum novo: usa `latitude`/`longitude` de `GET /api/v1/quadras`; `LocalizacaoService` com `Geolocator.getCurrentPosition` (geolocator 14.1.1, que usa o `FusedLocationProviderClient` quando há Google Play Services e o `LocationManager` quando não há); `launchUrl` da URI `geo:lat,lon?q=lat,lon(Nome)` (url_launcher) |
 
-Critério de aceite: ao conceder `ACCESS_COARSE_LOCATION`/`ACCESS_FINE_LOCATION` (pedidas juntas, no toque do card e não no launch) a lista reordena pela distância Haversine (`Geo.distanciaKm`) e cada card mostra "a X,X km"; quadras sem coordenadas vão para o fim; permissão negada → ordem alfabética e texto "Ative a localização para ver a distância"; sem fix de GPS a cadeia é `getCurrentLocation` → `lastLocation` → `ultima_lat/lon` do DataStore → sem distância; "Abrir no Maps" abre o app de mapas instalado sem SDK. Detalhes em docs/13-recurso-nativo.md. RNF08 cobre celular sem Google Play Services.
+Critério de aceite: ao conceder `ACCESS_COARSE_LOCATION`/`ACCESS_FINE_LOCATION` (pedidas juntas, no toque do card e não no launch) a lista reordena pela distância Haversine (`geo.dart`) e cada card mostra "a X,X km"; quadras sem coordenadas vão para o fim; permissão negada → ordem alfabética e texto "Ative a localização para ver a distância"; sem fix de GPS a cadeia é `Geolocator.getCurrentPosition` (limite de 10 s) → `Geolocator.getLastKnownPosition()` → `ultima_lat/lon` do `SessaoStore` → sem distância; "Abrir no Maps" abre o app de mapas instalado sem SDK. Detalhes em docs/13-recurso-nativo.md. RNF08 cobre celular sem Google Play Services.
 
 ## Módulo Persistência local
 
-### RF23 — O sistema deve manter cache local de quadras e reservas (Room) com sincronização "cache primeiro, servidor vence" e leitura offline das telas de consulta.
+### RF23 — O sistema deve manter cache local de quadras e reservas (drift) com sincronização "cache primeiro, servidor vence" e leitura offline das telas de consulta.
 
 | Prioridade | Perfil | Tela(s) | Endpoint(s) |
 |---|---|---|---|
@@ -231,7 +233,7 @@ Nota de escopo: o módulo inteiro é **recomendado** (Should Have), e não obrig
 
 | Prioridade | Perfil | Tela(s) | Endpoint(s) |
 |---|---|---|---|
-| Should Have | CLIENTE | `Pagamento` (pede `POST_NOTIFICATIONS` na primeira abertura, API 33+) | nenhum: `PagamentoViewModel` detecta PENDENTE → PAGO e chama `NotificadorReserva.confirmada(reserva)` (`NotificationCompat`, canal `reservas`) |
+| Should Have | CLIENTE | `Pagamento` (pede `POST_NOTIFICATIONS` na primeira abertura, API 33+) | nenhum: `PagamentoViewModel` detecta PENDENTE → PAGO e chama `NotificadorReserva.confirmada(reserva)` (flutter_local_notifications, canal `reservas`) |
 
 Critério de aceite: ao confirmar o pagamento, aparece na barra a notificação "Reserva confirmada! Quadra X, 10/10 às 19h" cujo toque abre `DetalheReserva`; permissão negada = nenhuma notificação e nenhum erro; o switch `notificar_confirmacao` em `Perfil` desliga o recurso. Não é push (FCM) — dito explicitamente na apresentação. Entra só com todos os Must verdes (regra de ouro do backlog).
 
@@ -243,7 +245,7 @@ Integrante titular (suplente entre parênteses) conforme docs/15-divisao-equipe.
 |---|---|---|---|---|
 | RF01 | Must (N1) | Cadastro | `POST /auth/registrar` | A (D) |
 | RF02 | Must (N1) | Login | `POST /auth/login` | A (D) |
-| RF03 | Must (N1) | Splash, Perfil | `SessaoDataStore`, `AuthInterceptor` | A (D) |
+| RF03 | Must (N1) | Splash, Perfil | `SessaoStore`, `AuthInterceptor` | A (D) |
 | RF04 | Must (N2) | Login | `POST /auth/login` 429, `LoginTentativasService` | A (D) |
 | RF05 | Must (N1) | Perfil | `GET/PUT /usuarios/me` | A (D) |
 | RF06 | Must (N1) | MinhasQuadras, FormQuadra | `POST/GET/PUT/DELETE /quadras`, `GET /quadras/minhas` | B (C) |
@@ -262,7 +264,7 @@ Integrante titular (suplente entre parênteses) conforme docs/15-divisao-equipe.
 | RF19 | Must (N2) (backend N1); produção Should | Pagamento | `POST /reservas` (pagamento), `PixGateway`, `SimuladoPixGateway`, `InterPixGateway` | D (A) |
 | RF20 | Must (N2); webhook Should | Pagamento, DetalheReserva | `GET /reservas/{id}/pagamento`, `ConsultaPagamentoJob`, `POST /webhooks/inter/pix/{segredo}` | D (A) |
 | RF21 | Must (N2) | Pagamento (debug) | `POST /dev/pagamentos/{txid}/confirmar` | D (A) |
-| RF22 | Must (N2) | Quadras, DetalheQuadra | `LocalizacaoProvider`, `Geo.kt`, Intent `geo:` | C (B) |
+| RF22 | Must (N2) | Quadras, DetalheQuadra | `LocalizacaoService`, `geo.dart`, URI `geo:` (url_launcher) | C (B) |
 | RF23 | Must (N2) | 8 telas com `BannerOffline` | `AppDatabase`, `Sincronizador`, `MonitorConectividade` | C (B); `quadra_cache`: B |
 | RF24 | Should | Pagamento | `NotificadorReserva` | C (B) |
 

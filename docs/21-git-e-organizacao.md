@@ -2,6 +2,8 @@
 
 Regras de trabalho no monorepo `so-mais-uma`: estrutura, `.gitignore`, branches, commits, pull requests, issues e board, CI, rituais, prova do histórico dos quatro integrantes, política de segredos, tags de release e o README como contrato com a banca.
 
+Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter. A pasta do app passa de `android/` para `frontend/`, o job de CI `android` vira `frontend` e a label de camada `android` vira `frontend`; o backend não muda (mapeamento completo em docs/09-arquitetura.md).
+
 ## 21.1 Estrutura do monorepo
 
 Um único repositório GitHub privado (público opcional após a N2), com backend, app e documentação lado a lado. Motivo: um `git shortlog` prova o critério 7 de uma vez, um PR pode alterar contrato e tela juntos, e o board tem uma fonte só.
@@ -12,7 +14,7 @@ so-mais-uma/
 ├── CONTRIBUTING.md                # resumo operacional deste documento + armadilhas de toolchain
 ├── .gitignore
 ├── .github/
-│   ├── workflows/ci.yml           # build backend + assembleDebug (seção 21.7)
+│   ├── workflows/ci.yml           # build backend + job frontend (analyze, test, APK debug) (seção 21.7)
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   ├── ISSUE_TEMPLATE/tarefa.md
 │   ├── ISSUE_TEMPLATE/bug.md
@@ -35,21 +37,25 @@ so-mais-uma/
 │       │   ├── application-inter-prod.yml
 │       │   └── db/migration/V1__init.sql
 │       └── test/java/br/com/puc/so_mais_uma/
-├── android/                       # Kotlin 2.4.10, AGP 9.4, Compose BOM 2026.08.00
-│   ├── build.gradle.kts
-│   ├── settings.gradle.kts
-│   ├── gradle/libs.versions.toml  # todas as versoes fixadas
-│   └── app/
-│       ├── build.gradle.kts
-│       └── src/
-│           ├── main/java/br/com/somaisuma/app/
-│           │   ├── di/ data/remote/ data/local/ data/repository/
-│           │   ├── model/ ui/navigation/ ui/theme/ ui/components/
-│           │   ├── ui/auth/ ui/quadras/ ui/reservas/ ui/pagamento/ ui/dono/ ui/perfil/
-│           │   └── util/
-│           ├── main/res/xml/network_security_config.xml
-│           ├── test/                # ViewModels com fakes
-│           └── androidTest/         # QuadraDaoTest (recomendado)
+├── frontend/                      # Flutter 3.47.6 (Dart 3.13.5); plataforma-alvo Android
+│   ├── pubspec.yaml               # todas as versoes fixadas
+│   ├── pubspec.lock               # versionado
+│   ├── analysis_options.yaml      # flutter_lints
+│   ├── config/
+│   │   ├── dev.json.exemplo       # API_BASE_URL e DEV_KEY de exemplo (versionado)
+│   │   ├── dev.json               # valores locais (ignorado)
+│   │   └── release.json           # so a URL HTTPS do Render, sem DEV_KEY (versionado)
+│   ├── android/                   # Gradle gerado pelo flutter create (applicationId, minSdk 26, .debug, desugaring, assinatura)
+│   │   ├── key.properties         # assinatura de release (ignorado)
+│   │   └── app/src/debug/AndroidManifest.xml   # cleartext so no debug
+│   ├── lib/
+│   │   ├── main.dart  app.dart
+│   │   ├── config/ data/remote/ data/local/ data/repository/
+│   │   ├── model/ ui/navegacao/ ui/tema/ ui/componentes/
+│   │   ├── ui/auth/ ui/quadras/ ui/reservas/ ui/pagamento/ ui/dono/ ui/perfil/
+│   │   └── util/
+│   ├── test/                      # ViewModels com FakeApiClient, widget tests, QuadraDaoTest (drift em memoria)
+│   └── integration_test/          # opcional (emulador), fora do CI
 ├── docs/                          # 00-indice.md ... 23-plano-de-testes.md
 │   ├── prototipo/                 # export do prototipo do Figma (figma-cp1.pdf)
 │   ├── apresentacao/              # n1.pdf, n2.pdf
@@ -74,7 +80,7 @@ so-mais-uma/
     └── kit-demo-offline/          # compose.yaml (postgres + jar) + README
 ```
 
-Regras: nada fora dessas pastas; arquivos gerados (`build/`, `.gradle/`, `.idea/`) nunca entram; `docs/imagens/` guarda PNG/SVG exportados (o Figma fica no link, com backup em PDF em `docs/prototipo/`); o keystore de release fica fora do repositório com o integrante A e uma cópia no gerenciador de senhas do grupo.
+Regras: nada fora dessas pastas; arquivos gerados (`build/`, `.dart_tool/`, `*.g.dart`, `.gradle/`, `.idea/`) nunca entram — o CI e cada integrante geram os `*.g.dart` com `build_runner`; `docs/imagens/` guarda PNG/SVG exportados (o Figma fica no link, com backup em PDF em `docs/prototipo/`); o keystore de release e o `frontend/android/key.properties` ficam fora do repositório com o integrante A e uma cópia no gerenciador de senhas do grupo.
 
 ## 21.2 `.gitignore` essencial (primeiro commit)
 
@@ -94,6 +100,8 @@ keystore.properties
 local.properties
 google-services.json
 scripts/http-client.private.env.json
+frontend/config/dev.json
+frontend/android/key.properties
 
 # Build e caches
 build/
@@ -101,11 +109,17 @@ build/
 out/
 *.class
 *.jar
-!gradle/wrapper/gradle-wrapper.jar
 *.apk
 *.aab
 captures/
 .cxx/
+
+# App Flutter (frontend/) - codigo gerado e caches
+.dart_tool/
+*.g.dart
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
 
 # IDE e sistema operacional
 .idea/
@@ -120,7 +134,7 @@ Thumbs.db
 hs_err_pid*
 ```
 
-O CI (seção 21.7) falha se um arquivo `*.key`, `*.crt`, `*.pfx`, `*.jks` ou `.env` aparecer no diff; a política completa está na seção 21.10.
+O CI (seção 21.7) falha se um arquivo `*.key`, `*.crt`, `*.pfx`, `*.jks` ou `.env` aparecer no diff; a política completa está na seção 21.10. O `flutter create` também gera `frontend/.gitignore` e `frontend/android/.gitignore` (este já ignora `local.properties`, `key.properties`, `*.jks` e `*.keystore`); os dois são mantidos como vieram e o arquivo da raiz acima repete o essencial. `frontend/pubspec.lock` e `frontend/config/dev.json.exemplo`/`release.json` são versionados; `*.g.dart` nunca (o CI e cada integrante geram com `build_runner`).
 
 ## 21.3 Estratégia de branches
 
@@ -130,7 +144,7 @@ O CI (seção 21.7) falha se um arquivo `*.key`, `*.crt`, `*.pfx`, `*.jks` ou `.
 | `feat/<area>-<descricao>` | Funcionalidade nova. Ex.: `feat/reserva-indice-unico-parcial`, `feat/quadras-tela-lista` | Vida máxima de 5 dias úteis; nasce da `main`; um PR por branch |
 | `fix/<area>-<descricao>` | Correção de bug. Ex.: `fix/pagamento-polling-backoff` | Idem |
 | `docs/<assunto>` | Só documentação. Ex.: `docs/08-modelagem-banco` | Revisão leve (um comentário "ok" basta) |
-| `chore/<assunto>` | Build, CI, versões, `.gitignore`. Ex.: `chore/ci-assemble-debug` | Idem `feat` |
+| `chore/<assunto>` | Build, CI, versões, `.gitignore`. Ex.: `chore/ci-job-frontend` | Idem `feat` |
 | `spike/<nome>` | Experimentos de aprendizado (S1) | Nunca mesclada; apagada após a S2 |
 | `release/n1`, `release/beta` | Congelamento para a N1 (ter 29/09) e para o CP2 (qua 04/11) | Só `fix/` entra, via PR; a `main` continua recebendo funcionalidades; tag criada a partir dela |
 
@@ -181,7 +195,7 @@ Regras: um commit por ideia (a regra prática é "o título cabe em 72 caractere
 | `test(reserva): adiciona ReservaConcorrenciaIT com 10 threads no mesmo slot (#12)` | `testes` | Nomeia a classe e o cenário |
 | `docs(08): descreve ux_reserva_slot_ativo e RN08 na modelagem (#20)` | `atualiza docs` | Nomeia o documento e o conteúdo |
 | `feat(quadras): adiciona busca de CEP com preenchimento de lat/lon no FormQuadra (#27)` | `tela de quadra pronta` | Escopo certo, verbo no imperativo, issue |
-| `chore(infra): fixa Kotlin 2.4.10 e AGP 9.4.0 no catalogo de versoes (#3)` | `update gradle` | Versões explícitas, em português |
+| `chore(infra): fixa Flutter 3.47.6 e go_router 18.0.2 no pubspec.yaml (#3)` | `update deps` | Versões explícitas, em português |
 | `refactor(auth): extrai LoginTentativasService do AuthService (#8)` | `refatoracao geral` | Uma mudança, nomeada |
 
 ## 21.5 Pull requests
@@ -190,9 +204,9 @@ Regras: um commit por ideia (a regra prática é "o título cabe em 72 caractere
 |---|---|---|
 | Tamanho | Menos de 400 linhas alteradas (sem contar arquivos gerados e `scripts/seed-demo.sql`); acima disso, o revisor pode pedir para dividir | Obrigatório |
 | Revisão | 1 aprovação do suplente da fatia (A<->D, B<->C); se o suplente não responder em 24 h úteis, qualquer outro integrante revisa; ninguém aprova o próprio PR | Obrigatório |
-| CI | Verde (build backend com testes + `assembleDebug` + verificação de segredos) | Obrigatório |
+| CI | Verde (build backend com testes + job `frontend` com `flutter analyze`, `flutter test` e APK debug + verificação de segredos) | Obrigatório |
 | Título | Mesma convenção do commit: `feat(reserva): tela ConfirmarReserva com tratamento de 409/422/502 (#33)` | Obrigatório |
-| Commit do revisor | Em PR de tela, o revisor faz ao menos um commit de acessibilidade (contentDescription, alvos de 48 dp, `ImeAction.Next`, texto de erro) antes de aprovar | Obrigatório |
+| Commit do revisor | Em PR de tela, o revisor faz ao menos um commit de acessibilidade (`Semantics`/`semanticLabel`/`tooltip`, alvos de 48 dp, `TextInputAction.next`, texto de erro) antes de aprovar | Obrigatório |
 | Rascunho | PR aberto como Draft assim que a branch existe, para o grupo ver o andamento | Recomendado |
 | Prazo | Revisão em até 24 h úteis; PR aberto há mais de 48 h é assunto do ritual de segunda | Obrigatório |
 | Segredos | O revisor olha o diff inteiro procurando `.env`, chaves, tokens, URLs com credencial | Obrigatório |
@@ -209,7 +223,7 @@ Fecha #
 ## Fatia completa?
 - [ ] Endpoint no Swagger (ou N/A)
 - [ ] Tela funcionando contra a API real (ou N/A)
-- [ ] Cache/Room atualizado (ou N/A)
+- [ ] Cache drift atualizado (ou N/A)
 - [ ] Teste automatizado incluido
 - [ ] Documento da fatia atualizado (docs/xx)
 
@@ -221,11 +235,14 @@ Fecha #
 - [ ] Nenhum segredo, certificado ou .env no diff
 - [ ] Contrato aditivo (nenhum campo removido/renomeado apos a N1)
 - [ ] Migrations aditivas (V1__init.sql nao editado apos a N1; toda mudanca de esquema entra como V2, V3, ...)
+- [ ] App: mudou tabela drift? bump do `schemaVersion` do drift (cache recriado) (ou N/A)
+- [ ] App: mudou tabela drift ou DTO? rodou `dart run build_runner build --delete-conflicting-outputs` (`*.g.dart` nao versionados) (ou N/A)
+- [ ] App: `flutter analyze` e `flutter test` verdes (ou N/A)
 - [ ] Nenhum item Must Have com bug aberto (se este PR for Should/Could)
 - [ ] Em PR de tela: commit de acessibilidade do revisor
 ```
 
-Checklist do revisor (em 10 min): roda o `main` + a branch localmente ou lê o "Como testar"; confere se o nome dos identificadores segue docs/08 e docs/10; procura `com.fasterxml.jackson`, `kapt`, `@MockBean`, `@Data` em entidade; confere estados carregando/vazio/erro em tela nova; faz o commit de acessibilidade; aprova ou pede mudança com comentário objetivo.
+Checklist do revisor (em 10 min): roda o `main` + a branch localmente ou lê o "Como testar"; confere se o nome dos identificadores segue docs/08 e docs/10; procura `com.fasterxml.jackson`, `@MockBean`, `@Data` em entidade e, no app, `*.g.dart` versionado, `BuildContext` usado depois de `await` sem `if (!context.mounted) return;` e `Timer`/`StreamSubscription` sem cancelamento no `dispose()`; confere estados carregando/vazio/erro em tela nova; faz o commit de acessibilidade; aprova ou pede mudança com comentário objetivo.
 
 ## 21.6 Issues, labels, milestones e board
 
@@ -234,7 +251,7 @@ Toda tarefa é uma issue antes de virar branch. Issues são criadas pelo titular
 | Grupo de labels | Valores | Uso |
 |---|---|---|
 | Prioridade (obrigatório, uma por issue) | `must-n1`, `must-n2`, `should`, `could`, `fora-mvp` | Equivalem a Must Have (N1), Must Have (N2), Should Have, Could Have, Fora do MVP de docs/14-backlog.md |
-| Camada (uma ou mais) | `backend`, `android`, `docs`, `infra` | Permite ver no board se cada integrante está tocando as três pastas |
+| Camada (uma ou mais) | `backend`, `frontend`, `docs`, `infra` (a label `android` foi renomeada para `frontend` em 06/10/2026) | Permite ver no board se cada integrante está tocando as três pastas |
 | Estimativa (obrigatório; campo personalizado do board, não label) | `P` (<= 3 h), `M` (<= 8 h), `G` (<= 16 h, precisa ser quebrada) | Base do cálculo de 40 h/semana |
 | Tipo | `bug`, `usabilidade`, `risco`, `contrato`, `inter`, `spike` | `usabilidade` vem dos testes da S11 com a severidade em label própria; `risco` cita o ID de docs/19-riscos.md; `contrato` exige aprovação de A e B; `inter` é burocracia do banco com data; `spike` é experimento de aprendizado |
 | Severidade (só em `bug` e `usabilidade`) | `sev-1`, `sev-2`, `sev-3`, `sev-4` | Escala de docs/22-testes-com-usuarios.md, seção 9 |
@@ -258,7 +275,7 @@ about: Item do backlog (RF, RNF, RN, doc ou infra)
 labels: ''
 ---
 **Requisito:** RFxx / RNxx / RNFxx (ou doc/infra)
-**Fatia:** backend / android / docs / infra
+**Fatia:** backend / frontend / docs / infra
 **Criterio de pronto:**
 - [ ] ...
 **Estimativa:** P / M / G
@@ -300,19 +317,42 @@ jobs:
           JWT_SECRET: ci-somente-teste-chave-com-mais-de-32-bytes-0123
           DEV_KEY: ci-dev-key
 
-  android:
+  frontend:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: android } }
+    defaults: { run: { working-directory: . } }
     steps:
       - uses: actions/checkout@v4
+      - name: Projeto Flutter ainda nao existe
+        if: hashFiles('frontend/pubspec.yaml') == ''
+        run: echo "Sem frontend/pubspec.yaml no repositorio; job ignorado ate o projeto Flutter ser criado."
+      # JDK para o Gradle do Android usado pelo flutter build apk
       - uses: actions/setup-java@v4
+        if: hashFiles('frontend/pubspec.yaml') != ''
         with: { distribution: temurin, java-version: '21' }
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Testes unitarios e APK debug
-        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon
+      - uses: subosito/flutter-action@v2
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        with: { channel: stable, flutter-version: '3.47.6', cache: true }
+      - name: Dependencias, geracao de codigo, analise e testes
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        working-directory: frontend
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter analyze
+          flutter test
+      - name: APK debug
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        working-directory: frontend
+        run: flutter build apk --debug --dart-define-from-file=config/dev.json.exemplo
+      - name: Artefato APK debug
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-O que a CI garante: backend compila e passa nos testes (incluindo `ReservaConcorrenciaIT` com Testcontainers, pois o runner `ubuntu-latest` tem Docker); Android compila, roda os testes de ViewModel e gera o APK debug; nenhum segredo está versionado. O que ela não faz (decisão consciente): testes instrumentados com emulador, análise estática, deploy (o Render faz deploy por push na `main`). Recomendado, se sobrar tempo na S9: job `gitleaks/gitleaks-action` para varrer o histórico, e job de release que anexa o APK à tag.
+O que a CI garante: backend compila e passa nos testes (incluindo `ReservaConcorrenciaIT` com Testcontainers, pois o runner `ubuntu-latest` tem Docker); o app Flutter gera o código do drift e do json_serializable (`build_runner`), passa no `flutter analyze` (flutter_lints), roda o `flutter test` (ViewModels, widget tests das Screens, DAO drift em memória, utilitários) e gera o APK debug como artifact, com o Flutter 3.47.6 fixado igual ao dos notebooks (tempo alvo < 8 min); enquanto `frontend/pubspec.yaml` não existir, o job `frontend` só imprime um aviso e passa; nenhum segredo está versionado. O que ela não faz (decisão consciente): testes de integração com emulador (`flutter test integration_test`, opcional e local), análise estática do backend, deploy (o Render faz deploy por push na `main`). Recomendado, se sobrar tempo na S9: job `gitleaks/gitleaks-action` para varrer o histórico, e job de release que anexa o APK à tag.
 
 O badge do CI vai na primeira linha do README.
 
@@ -321,7 +361,7 @@ O badge do CI vai na primeira linha do README.
 | Quando | Duração | O que acontece | Registro |
 |---|---|---|---|
 | Segunda, 30 min | Planejamento | Cada um diz o que entrega até sexta (issues com estimativa); redistribuição de tarefa atrasada há mais de 1 semana; PRs abertos há mais de 48 h | Comentário na issue "Ritual de segunda Sxx" |
-| Sexta, 15 min | Demo interna | Cada um mostra o que roda a partir do `main` (não da branch); A roda `git shortlog -sn --no-merges -- backend android docs` e percorre docs/19-riscos.md; D atualiza o board | Saída do shortlog e riscos disparados na issue "Ritual de sexta Sxx" |
+| Sexta, 15 min | Demo interna | Cada um mostra o que roda a partir do `main` (não da branch); A roda `git shortlog -sn --no-merges -- backend frontend docs` e percorre docs/19-riscos.md; D atualiza o board | Saída do shortlog e riscos disparados na issue "Ritual de sexta Sxx" |
 | Diário, assíncrono | 1 mensagem | "Ontem / hoje / bloqueio" no chat do grupo; bloqueio vira issue se durar mais de 1 dia | Chat |
 | Revisão de PR | Até 24 h úteis | Suplente revisa; após 24 h qualquer um | GitHub |
 | Datas do Inter | 29/09, 27/10, 24/11 | Renovação do certificado sandbox (D, suplente A) | Issues `inter` datadas |
@@ -333,13 +373,15 @@ Critério 7 da disciplina: commits dos quatro, descritivos, com divisão clara. 
 
 ```bash
 # visao geral (sem merges, por pasta)
-git shortlog -sn --no-merges -- backend android docs
-# por camada, para mostrar que todos tocaram backend E android
+git shortlog -sn --no-merges -- backend frontend docs
+# por camada, para mostrar que todos tocaram backend E frontend
 git shortlog -sn --no-merges -- backend
-git shortlog -sn --no-merges -- android
+git shortlog -sn --no-merges -- frontend
 git shortlog -sn --no-merges -- docs
+# commits do app anteriores a 06/10/2026 (pasta android/, se existiu) continuam no historico
+git shortlog -sn --no-merges -- android
 # historia de um integrante em uma area
-git log --no-merges --date=short --format='%h %ad %an %s' --author='Integrante B' -- android
+git log --no-merges --date=short --format='%h %ad %an %s' --author='Integrante B' -- frontend
 # commits por semana (para o relatorio final)
 git log --no-merges --date=format:'S%V' --format='%ad %an' | sort | uniq -c
 ```
@@ -356,21 +398,21 @@ Armadilhas e como evitar:
 | Commits gigantes na véspera | Histórico não descritivo | PR < 400 linhas; commits por ideia; CI por PR |
 | Commit em nome do colega (mesmo notebook) | Atribuição errada | Cada um usa a própria máquina ou `git -c user.name=... -c user.email=... commit` e `Co-authored-by` |
 
-Meta verificável: até 25/09 cada integrante tem commits em `backend/`, `android/` e `docs/`; até 27/11 nenhum integrante tem menos de 15 % dos commits sem merge. O consolidado por semana vai para docs/15-divisao-equipe.md na S12.
+Meta verificável: até 25/09 cada integrante tem commits em `backend/`, `android/` e `docs/` (`android/` era a pasta do app até a N1; a partir de 06/10/2026 a mesma verificação por pasta usa `frontend/`); até 27/11 nenhum integrante tem menos de 15 % dos commits sem merge. O consolidado por semana vai para docs/15-divisao-equipe.md na S12.
 
 ## 21.10 Política de segredos e resposta a vazamento
 
 | Segredo | Dev local | CI | Render | Nunca |
 |---|---|---|---|---|
 | `JWT_SECRET` (>= 32 bytes) | `.env` ignorado, carregado pela IDE ou `export` | GitHub Secret | Environment variable | No `application*.yml`, no código, no chat |
-| `DEV_KEY` (header `X-Dev-Key`) | `.env` | GitHub Secret | Environment variable | Idem |
+| `DEV_KEY` (header `X-Dev-Key`) | `.env` (backend) e `frontend/config/dev.json` (app, ignorado) | GitHub Secret | Environment variable | Idem; nunca em `frontend/config/release.json` |
 | `INTER_CLIENT_ID`, `INTER_CLIENT_SECRET`, `INTER_CHAVE_PIX` | `.env` de quem tem acesso (D, A) | Não usado (CI roda em `simulado`) | Environment variable | Idem |
 | `INTER_CRT`, `INTER_KEY` (arquivos) | `~/inter/` fora do repositório | Não usado | Secret Files | No repositório, em anexo de issue, em print |
-| Keystore de release e senhas | Com A, fora do repositório; cópia no gerenciador de senhas | Não usado | Não usado | Idem |
+| Keystore de release, `frontend/android/key.properties` e senhas | Com A, fora do repositório; cópia no gerenciador de senhas | Não usado | Não usado | Idem |
 | Senhas do Neon/Render | Painel dos serviços; gerenciador de senhas | — | — | Idem |
 | Senha `Senha123` dos usuários de seed | `scripts/seed-demo.sql` (dado público de demonstração) | ok | Só com profile que carrega o seed | Não é segredo, mas nunca reutilizar em conta real |
 
-Regras: `.env.exemplo` versionado com os nomes das variáveis e valores vazios; `application-inter-*.yml` referencia só `${VARIAVEL}`; segredos são compartilhados por gerenciador de senhas do grupo (cofre compartilhado), nunca por chat em texto plano; antes de cada commit, `git diff --cached --stat` para conferir os arquivos incluídos; o job `segredos` do CI e a revisão de PR são a segunda barreira; se o repositório for público, ativar Secret scanning e Push protection nas configurações do GitHub (gratuitos em repositórios públicos); em repositório privado, o job `gitleaks` (recomendado) cobre.
+Regras: `.env.exemplo` versionado com os nomes das variáveis e valores vazios; `frontend/config/dev.json.exemplo` versionado com valores de exemplo e `frontend/config/release.json` versionado só com a URL HTTPS do Render (o app lê os dois via `--dart-define-from-file`, e o que vai no APK pode ser extraído dele, por isso nenhum segredo de servidor entra ali); `application-inter-*.yml` referencia só `${VARIAVEL}`; segredos são compartilhados por gerenciador de senhas do grupo (cofre compartilhado), nunca por chat em texto plano; antes de cada commit, `git diff --cached --stat` para conferir os arquivos incluídos; o job `segredos` do CI e a revisão de PR são a segunda barreira; se o repositório for público, ativar Secret scanning e Push protection nas configurações do GitHub (gratuitos em repositórios públicos); em repositório privado, o job `gitleaks` (recomendado) cobre.
 
 Se um segredo vazar (mesmo em branch, mesmo por 1 minuto), nas próximas 24 h:
 
@@ -409,12 +451,12 @@ Seções obrigatórias, nesta ordem:
 
 1. Nome, uma frase do produto, badge do CI, link para docs/00-indice.md.
 2. Integrantes, fatias e suplentes (tabela de docs/15-divisao-equipe.md resumida).
-3. Stack e tabela de versões fixadas, com a data de verificação (01/09/2026).
-4. Pré-requisitos (JDK 21, Docker, Android Studio Quail 4, `adb`).
+3. Stack e tabela de versões fixadas, com a data de verificação (01/09/2026; app Flutter verificado em 06/10/2026).
+4. Pré-requisitos (JDK 21, Docker, Flutter 3.47.6 com o Android SDK via Android Studio ou cmdline-tools, `adb`).
 5. Como rodar o backend em 3 comandos (`git clone`, `cd backend`, `./mvnw spring-boot:run`) e o que esperar (`/actuator/health`, Swagger, usuários de seed `cliente@demo.com` e `dono@demo.com` com senha `Senha123`).
-6. Como rodar o app (abrir `android/` no Android Studio, `API_BASE_URL` por build type, `10.0.2.2` no emulador, IP da LAN no celular, `adb install`).
+6. Como rodar o app (`cd frontend`, `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, copiar `config/dev.json.exemplo` para `config/dev.json`, `flutter run --dart-define-from-file=config/dev.json`; `API_BASE_URL` com `10.0.2.2` no emulador e IP da LAN no celular; `flutter build apk` + `adb install`).
 7. Profiles e variáveis de ambiente (`simulado` padrão; `inter-sandbox` e `inter-prod` com a lista de variáveis do `.env.exemplo`); aviso de que o sandbox funciona só entre 8h e 20h, de segunda a sexta.
-8. Como rodar os testes (`./gradlew test` no backend, `./gradlew testDebugUnitTest` no Android) e o que o `ReservaConcorrenciaIT` prova.
+8. Como rodar os testes (`./gradlew test` no backend, `flutter analyze` e `flutter test` em `frontend/`) e o que o `ReservaConcorrenciaIT` prova.
 9. Backlog e board (link do Projects) e convenções (link para este documento e para o `CONTRIBUTING.md`).
 10. Matriz critério da disciplina -> evidência -> onde ver (uma linha por critério, apontando arquivo, tela ou comando).
 11. Limitações conhecidas (JWT sem revogação, fuso único, Pix recebido na chave da plataforma, estorno manual, sem mTLS de entrada no webhook).
@@ -423,7 +465,7 @@ Critério de aceite do README: um integrante que não escreveu o código clona o
 
 ## 21.13 `CONTRIBUTING.md` e `CODEOWNERS`
 
-`CONTRIBUTING.md` (dono A) é a versão de uma página deste documento: fluxo de branch, formato de commit, checklist de PR, e a lista de armadilhas da toolchain que cada um descobriu no spike (imports `tools.jackson.*`, lambda DSL do Security 7, `@MockitoBean`, `spring-boot-starter-webmvc`, Kotlin embutido no AGP 9, KSP em vez de KAPT, plugin do Compose na versão do Kotlin, `androidx.room3`). Toda armadilha nova encontrada durante o projeto entra ali no mesmo PR que a resolveu.
+`CONTRIBUTING.md` (dono A) é a versão de uma página deste documento: fluxo de branch, formato de commit, checklist de PR, e a lista de armadilhas da toolchain que cada um descobriu no spike (imports `tools.jackson.*`, lambda DSL do Security 7, `@MockitoBean`, `spring-boot-starter-webmvc`; no app, `build_runner` após mudar tabela drift ou DTO, `--dart-define-from-file` em todo `flutter run`/`flutter build`, desempenho medido só em `--profile`/`--release`, desugaring exigido pelo flutter_local_notifications, `context.mounted` depois de `await`, `Timer`/`StreamSubscription` cancelados no `dispose()`, todos na mesma versão do Flutter, AGP/Gradle/Kotlin de `frontend/android/` como o `flutter create` gerou, hot restart após mudar `main()`/providers). As armadilhas do Android nativo (Kotlin embutido no AGP 9, KSP em vez de KAPT, plugin do Compose na versão do Kotlin, `androidx.room3`) foram retiradas em 06/10/2026 (troca para Flutter). Toda armadilha nova encontrada durante o projeto entra ali no mesmo PR que a resolveu.
 
 `.github/CODEOWNERS` (recomendado) faz o GitHub pedir revisão automaticamente ao titular e ao suplente de cada pasta, substituindo os placeholders pelos usuários reais:
 
@@ -434,12 +476,13 @@ Critério de aceite do README: um integrante que não escreveu o código clona o
 /backend/src/main/java/br/com/puc/so_mais_uma/integracao/pix/  @integrante-d @integrante-a
 /backend/src/main/java/br/com/puc/so_mais_uma/integracao/cep/  @integrante-b @integrante-c
 /backend/src/main/resources/db/migration/                @integrante-b @integrante-c
-/android/app/src/main/java/br/com/somaisuma/app/ui/auth/       @integrante-a @integrante-d
-/android/app/src/main/java/br/com/somaisuma/app/ui/quadras/    @integrante-b @integrante-c
-/android/app/src/main/java/br/com/somaisuma/app/ui/dono/       @integrante-b @integrante-c
-/android/app/src/main/java/br/com/somaisuma/app/ui/reservas/   @integrante-c @integrante-b
-/android/app/src/main/java/br/com/somaisuma/app/ui/pagamento/  @integrante-d @integrante-a
-/android/app/src/main/java/br/com/somaisuma/app/data/local/    @integrante-c @integrante-b
+/frontend/lib/ui/auth/                                    @integrante-a @integrante-d
+/frontend/lib/ui/quadras/                                 @integrante-b @integrante-c
+/frontend/lib/ui/dono/                                    @integrante-b @integrante-c
+/frontend/lib/ui/reservas/                                @integrante-c @integrante-b
+/frontend/lib/ui/pagamento/                               @integrante-d @integrante-a
+/frontend/lib/data/local/                                 @integrante-c @integrante-b
+/frontend/pubspec.yaml                                    @integrante-a @integrante-d
 /.github/                                                 @integrante-a
 /docs/                                                    @integrante-a
 ```

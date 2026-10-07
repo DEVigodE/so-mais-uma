@@ -40,7 +40,7 @@ Ver `proposal.md` — Why para a motivação. O que molda o desenho técnico:
 - Revogação de token, refresh token, recuperação de senha por e-mail.
 - Paginação, cache HTTP, cache distribuído, fila de mensagens.
 - Devolução de valores por API, divisão de valores, repasse ao dono.
-- Qualquer componente do aplicativo Android (RF03, RF22, RF23, RF24).
+- Qualquer componente do app Flutter (Android) (RF03, RF22, RF23, RF24).
 
 ## Decisions
 

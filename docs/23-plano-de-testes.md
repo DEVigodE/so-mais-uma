@@ -1,6 +1,8 @@
 # Plano de testes
 
-Pirâmide de testes do projeto (unitários por service, controllers com `@WebMvcTest`, integração com Testcontainers incluindo a corrida de 10 threads, ViewModels com `FakeApiService`, testes manuais CT-01..CT-30 rastreados a RF/RN e testes com usuários), comandos para rodar, o que roda no CI e critérios de saída para o Checkpoint 2 e a N2.
+Pirâmide de testes do projeto (unitários por service, controllers com `@WebMvcTest`, integração com Testcontainers incluindo a corrida de 10 threads, ViewModels e widget tests do app Flutter com `FakeApiClient` e DAO drift em memória no `flutter test`, testes manuais CT-01..CT-30 rastreados a RF/RN e testes com usuários), comandos para rodar, o que roda no CI e critérios de saída para o Checkpoint 2 e a N2.
+
+Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter (decisão do projeto em 06/10/2026). Os testes do app passam a rodar todos no `flutter test`, sem emulador (inclusive o DAO), e o job de CI `android` virou `frontend`; backend, CT-xx e critérios de saída não mudam (equivalências em docs/09-arquitetura.md).
 
 ## 1. Pirâmide do projeto
 
@@ -8,9 +10,9 @@ Pirâmide de testes do projeto (unitários por service, controllers com `@WebMvc
 flowchart TB
   U["Testes com usuários (5-8 pessoas, SUS)<br/>docs/22 — 09 a 13/11"] --> M
   M["Testes manuais CT-01..CT-31<br/>Swagger + app no celular — CP2 e N2"] --> I
-  I["Integração backend (Testcontainers postgres:18-alpine)<br/>ReservaConcorrenciaIT, FlywayMigracaoIT, DAO opcional"] --> C
-  C["Controllers @WebMvcTest + ViewModels com FakeApiService"] --> S
-  S["Unitários: services do backend, PixPayloadBuilder, SlotService, Sincronizador"]
+  I["Integração backend (Testcontainers postgres:18-alpine)<br/>ReservaConcorrenciaIT, FlywayMigracaoIT; app: integration_test opcional (emulador)"] --> C
+  C["Controllers @WebMvcTest + ViewModels e widget tests com FakeApiClient + DAO drift em memória"] --> S
+  S["Unitários: services do backend, PixPayloadBuilder, SlotService, Sincronizador, geo.dart"]
 ```
 
 | Nível | Ferramenta | Onde | Quando roda | Responsável |
@@ -18,12 +20,14 @@ flowchart TB
 | Unitário backend (por service) | JUnit 5 + Mockito (`@MockitoBean` só nos slice tests) | `backend/src/test/java/br/com/puc/so_mais_uma/service/*Test.java` | todo PR (CI) | dono da fatia |
 | Controller | `@WebMvcTest` + `MockMvc` + `spring-boot-starter-webmvc-test`; segurança real (`SecurityConfig` importada) | `backend/src/test/java/.../controller/*Test.java` | todo PR (CI) | A (auth), B (quadra), C (reserva), D (pagamento/webhook) |
 | Integração | `@SpringBootTest` + `@ServiceConnection` `PostgreSQLContainer` (Testcontainers 2.x, imagem `postgres:18-alpine`), Flyway real, profile `simulado` | `backend/src/test/java/.../*IT.java` | todo PR (CI, Docker do runner) | C (`ReservaConcorrenciaIT`), B (`FlywayMigracaoIT`) |
-| ViewModel Android | JUnit 5 + `kotlinx-coroutines-test` + `FakeApiService` + `FakeQuadraDao`/`FakeReservaDao` em memória + `FakeSessaoDataStore` | `android/app/src/test/kotlin/.../ui/**/*ViewModelTest.kt` | todo PR (CI, JVM, sem emulador) | dono da tela |
-| DAO Room (opcional, Should Have) | `androidTest` com Room in-memory | `android/app/src/androidTest/.../QuadraDaoTest.kt` | manual no notebook com emulador | B |
+| ViewModel do app (Flutter) | `flutter_test` + `FakeApiClient` + `FakeQuadraDao`/`FakeReservaDao` ou o `AppDatabase` drift em memória (`NativeDatabase.memory()`) + `FakeSessaoStore`; tempo do polling controlado com `fakeAsync`; fakes escritos à mão são o padrão (mocktail 1.0.5 opcional) | `frontend/test/ui/**/*_view_model_test.dart` | todo PR (CI, job `frontend`, sem emulador) | dono da tela |
+| Widget (Screen) | `testWidgets` com `XxxScreen(state: ...)` montada a partir de um `XxxUiState` fixo (substitui o `@Preview`) | `frontend/test/ui/**/*_screen_test.dart` | todo PR (CI, job `frontend`, sem emulador) | dono da tela |
+| DAO drift (opcional, Should Have) | `flutter test` com `AppDatabase(NativeDatabase.memory())` | `frontend/test/data/local/quadra_dao_test.dart` | todo PR quando existir (CI, sem emulador) | B |
+| Integração do app (opcional) | `integration_test` (fluxo real no emulador) | `frontend/integration_test/` | manual no notebook com emulador; fora do CI | dono da tela |
 | Manuais CT-xx | Swagger, `adb`, 2 celulares | este arquivo, seção 3 | mutirão de testes da S10 (02 a 06/11, 2 h por integrante), reteste S13, ensaio S14/S15 | D organiza; cada um executa os CT da fatia de outro integrante |
 | Usuários | roteiro de 6 tarefas + SUS | docs/22-testes-com-usuarios.md | 09 a 13/11 | C |
 
-Decisão: sem testes de UI Compose automatizados em CI (emulador no runner custa tempo e quebra por toolchain); a lógica de tela fica nos ViewModels testáveis na JVM e o comportamento visual é coberto pelos CT manuais e pelos testes com usuários (ver "complexidade evitada" em docs/00-indice.md).
+Decisão: sem testes ponta a ponta no emulador em CI (`integration_test` exige emulador no runner, que custa tempo e quebra por ambiente); a lógica de tela fica nos ViewModels e a renderização de cada Screen com estado fixo fica nos widget tests, ambos no `flutter test` sem emulador, e o comportamento ponta a ponta é coberto pelos CT manuais e pelos testes com usuários (ver "complexidade evitada" em docs/00-indice.md).
 
 ## 2. Inventário de testes automatizados
 
@@ -44,13 +48,14 @@ Decisão: sem testes de UI Compose automatizados em CI (emulador no runner custa
 | `PagamentoServiceTest` | unitário | `confirmar(txid, e2e, valor)` idempotente (2ª chamada no-op); valor divergente -> rejeitado com log; pagamento tardio para reserva EXPIRADA reconfirma se slot livre, senão log `ESTORNO_MANUAL`; pagamento para CANCELADA -> PAGO + `ESTORNO_MANUAL` | RF20, RN12, RN14 | D |
 | `InterPixGatewayTest` | unitário (`MockRestServiceServer`) | `PUT /pix/v2/cob/{txid}` com `calendario.expiracao=900`, `valor.original="80.00"`, chave; parse de `pixCopiaECola`/`location`; `GET /cob/{txid}` CONCLUIDA -> `endToEndId`; token cacheado (1 chamada a `/oauth/v2/token` para 2 cobranças); 429 -> exceção que o job trata pulando o ciclo | RF19, RF20 | D |
 | `InterWebhookControllerTest` | `@WebMvcTest` | aceita o array oficial `[{endToEndId, txid, chave, valor, horario, infoPagador, componentesValor}]`; txid desconhecido ignorado com 200; valor diferente ignorado; `infoPagador` nunca persistido | RF20 (Should Have), RN05, RNF02 | D |
-| `LoginViewModelTest` / `CadastroViewModelTest` | ViewModel | validação por campo; `CREDENCIAL_INVALIDA` e `LOGIN_BLOQUEADO` viram mensagens; sucesso grava `SessaoDataStore` (fake) e navega para a home do perfil | RF01, RF02, RNF06 | A |
-| `QuadrasViewModelTest` | ViewModel | filtro por esporte; ordenação por distância com `Geo.distanciaKm`; sem localização -> ordem alfabética; estados carregando/vazio/erro da tela e `ErroBox(onTentarNovamente)` no erro de rede. Exigida já na N1 (S2 a S4), quando ainda não existe cache local | RF07, RF22, RNF06 | B |
-| `QuadrasCacheViewModelTest` | ViewModel | cache primeiro (Flow do fake DAO) depois rede; `Resultado.Offline` -> `BannerOffline` com a data da última sincronização. Exigida a partir da S7, quando o cache Room e o banner são construídos | RF23 | B |
+| `LoginViewModelTest` / `CadastroViewModelTest` | ViewModel | validação por campo; `CREDENCIAL_INVALIDA` e `LOGIN_BLOQUEADO` viram mensagens; sucesso grava `SessaoStore` (fake) e navega para a home do perfil | RF01, RF02, RNF06 | A |
+| `QuadrasViewModelTest` | ViewModel | filtro por esporte; ordenação por distância com `distanciaKm` de `geo.dart`; sem localização -> ordem alfabética; estados carregando/vazio/erro da tela e `ErroBox(onTentarNovamente)` no erro de rede. Exigida já na N1 (S2 a S4), quando ainda não existe cache local | RF07, RF22, RNF06 | B |
+| `QuadrasCacheViewModelTest` | ViewModel | cache primeiro (`Stream` do DAO drift em memória ou fake) depois rede; `Resultado.Offline` -> `BannerOffline` com a data da última sincronização. Exigida a partir da S7, quando o cache drift e o banner são construídos | RF23 | B |
 | `ConfirmarReservaViewModelTest` | ViewModel | 201 -> navega para Pagamento; 409 -> evento "recarregar slots"; 422 `RESERVA_PENDENTE_EXISTENTE` -> navega para a reserva pendente; 502 -> mensagem "pagamento indisponível" | RF13, RN08, RN11, RN17 | C |
-| `SincronizadorTest` | unitário | `IOException` -> `Resultado.Offline` sem apagar cache; sucesso substitui o escopo e marca `ultima_sincronizacao`; `HttpException` -> `Resultado.Erro(codigo)` | RF23, RNF11 | C |
-| `PagamentoViewModelTest` | ViewModel | polling a cada 5 s por 2 min e depois 10 s (dispatcher de teste); PENDENTE -> PAGO chama `NotificadorReserva.confirmada` (fake) e emite navegação; EXPIRADO para o polling; contador regressivo a partir de `expiraEm` | RF20, RF24, RNF04 | D |
-| `QuadraDaoTest` (opcional) | `androidTest` | `substituirEscopo(CATALOGO, ...)` não apaga linhas `MINHAS` (PK composta `id, escopo`) | RF23 | B |
+| `SincronizadorTest` | unitário | `DioException` de conexão ou timeout (`connectionError`, `connectionTimeout`, `receiveTimeout`) -> `Resultado.Offline` sem apagar cache; sucesso substitui o escopo e marca `ultima_sincronizacao`; `DioException` `badResponse` -> `Resultado.Erro(codigo)` | RF23, RNF11 | C |
+| `PagamentoViewModelTest` | ViewModel | polling a cada 5 s por 2 min e depois 10 s (tempo controlado com `fakeAsync`); `Timer` cancelado no `dispose()`; PENDENTE -> PAGO chama `NotificadorReserva.confirmada` (fake) e emite navegação; EXPIRADO para o polling; contador regressivo a partir de `expiraEm` | RF20, RF24, RNF04 | D |
+| `QuadraDaoTest` (opcional) | DAO drift em memória (`NativeDatabase.memory()`, sem emulador) | `substituirEscopo(CATALOGO, ...)` não apaga linhas `MINHAS` (PK composta `id, escopo`); `observarPorEscopo` emite a lista nova após a substituição | RF23 | B |
+| Widget tests das Screens (recomendado) | widget (`testWidgets`) | cada `XxxScreen` renderiza carregando/vazio/erro/conteúdo a partir de um `XxxUiState` fixo; `ErroBox` chama `onTentarNovamente`; `PixQrCode` expõe o rótulo "QR Code Pix, R$ 80,00" | RNF06, RNF07 | dono da tela |
 
 ## 3. Casos de teste CT-01..CT-31
 
@@ -65,7 +70,7 @@ Mutirão de testes da S10 (bug bash): **8 horas somadas, sendo 2 horas por integ
 | CT-03 | Senha fora da política | Cadastro com senha `abcdefgh` e depois `12345678` | 400 `VALIDACAO` com `campos[senha]`; tela mostra "mínimo 8 caracteres com letra e número" antes de enviar | RF01, RNF01 | Auto + Manual | A |
 | CT-04 | Login válido e JWT | `POST /auth/login` `dono@demo.com`; decodificar o token | 200 `TokenResponse{token, expiraEm, usuario}`; claim `perfil=DONO`, `exp` = agora + 7 dias; Swagger com o token acessa `GET /usuarios/me` | RF02, RNF01 | Auto (`JwtServiceTest`) + Manual | A |
 | CT-05 | Bloqueio após 5 falhas | 5 logins com senha errada, depois 1 com senha certa | 5x 401 `CREDENCIAL_INVALIDA`; 6ª chamada 429 `LOGIN_BLOQUEADO`; tela: "Muitas tentativas, aguarde 15 minutos"; após 15 min (ou reinício do backend) volta a aceitar | RF04, RNF01 | Auto (`AuthServiceTest`) + Manual | A |
-| CT-06 | Sessão persistente e logout limpo | login; fechar o app pelo gerenciador; reabrir; depois Perfil > Sair; reabrir | reabre direto na home (Splash lê `token_expira_em`); após Sair abre Login e `adb shell run-as ... ls databases` mostra `somaisuma.db` sem linhas em `quadra_cache`/`reserva_cache` (ou app sem dados na lista antes do sync) | RF03, RNF03 | Manual | A |
+| CT-06 | Sessão persistente e logout limpo | login; fechar o app pelo gerenciador; reabrir; depois Perfil > Sair; reabrir | reabre direto na home (Splash lê `token_expira_em`); após Sair abre Login e a extensão drift do Flutter DevTools (ou `adb pull` do `somaisuma.sqlite`) mostra `quadra_cache`/`reserva_cache` sem linhas (ou app sem dados na lista antes do sync) | RF03, RNF03 | Manual | A |
 | CT-07 | Editar perfil e trocar senha | Perfil > alterar nome e telefone > Salvar; trocar senha com `senhaAtual` errada e depois correta; relogar | `PUT /usuarios/me` 200; senha errada -> 422; login só com a senha nova; perfil (CLIENTE/DONO) não editável | RF05, RN20 | Manual | A |
 | CT-08 | Criar quadra (CRUD-C) | como DONO: MinhasQuadras > FAB > FormQuadra completo > Salvar; `GET /quadras/minhas` | 201 com `Location`; `dono_id` = usuário logado; quadra aparece em MinhasQuadras e em `GET /quadras` (ativa) | RF06, RN01 | Auto (`QuadraServiceTest`) + Manual | B |
 | CT-09 | CLIENTE não cria quadra | Swagger com token CLIENTE: `POST /quadras` | 403 `ACESSO_NEGADO`; no app o CLIENTE não vê MinhasQuadras nem FAB | RN01, RN02 | Auto (`AuthControllerTest`) + Manual | B |
@@ -84,13 +89,13 @@ Mutirão de testes da S10 (bug bash): **8 horas somadas, sendo 2 horas por integ
 | CT-22 | Expiração em 15 min | criar reserva; `UPDATE reserva SET expira_em = now() - interval '1 minute' WHERE id=?` (e o mesmo em `pagamento`); aguardar até 60 s | reserva EXPIRADA, pagamento EXPIRADO; slot volta a LIVRE; tela Pagamento mostra "Expirado" e para o polling; reserva aparece no Histórico | RF14, RN10 | Auto (`ReservaServiceTest`) + Manual | C |
 | CT-23 | Gateway indisponível | subir backend com o `SimuladoPixGateway` em falha forçada (propriedade de teste `simulado.falhar=true` ou `@MockitoBean` lançando `IntegracaoExternaException`), ou profile `inter-sandbox` fora do horário 8h-20h, e criar reserva | 502 `PAGAMENTO_INDISPONIVEL`; reserva CANCELADA com `cancelado_por=SISTEMA`; nenhuma linha em `pagamento`; slot LIVRE; app: "Não foi possível gerar a cobrança, tente novamente" | RN17 | Auto (`ReservaFacadeTest`) + Manual | C / D |
 | CT-24 | Confirmação idempotente | `POST /dev/pagamentos/{txid}/confirmar` com `X-Dev-Key`; repetir; chamar sem o header; em `inter-sandbox` verificar que repassa a `POST /pix/v2/cob/pagar/{txid}` | 1ª: pagamento PAGO, reserva CONFIRMADA, `end_to_end_id` preenchido; 2ª: 422 `REGRA_NEGOCIO`/`TRANSICAO_INVALIDA`, sem alteração no banco; sem header -> 403; em `inter-prod` a rota não existe (404) | RF20, RF21, RN12 | Auto (`PagamentoServiceTest`) + Manual | D |
-| CT-25 | Polling, navegação e notificação | tela Pagamento aberta; confirmar via CT-24 em outro dispositivo/Swagger; repetir com notificações negadas e com TalkBack ligado | em <= 5 s a tela muda para "Pago", notificação "Reserva confirmada" aparece (se permitida), app navega para DetalheReserva com `popUpTo Quadras`; back não volta para ConfirmarReserva; sem permissão: só navega; TalkBack lê "QR Code Pix, R$ 80,00" | RF20, RF24, RNF04, RNF07 | Auto (`PagamentoViewModelTest`) + Manual | D |
+| CT-25 | Polling, navegação e notificação | tela Pagamento aberta; confirmar via CT-24 em outro dispositivo/Swagger; repetir com notificações negadas e com TalkBack ligado | em <= 5 s a tela muda para "Pago", notificação "Reserva confirmada" aparece (se permitida), app navega para DetalheReserva com `context.go(Rotas.detalheReserva(id))` (pilha substituída); back não volta para ConfirmarReserva; sem permissão: só navega; TalkBack lê "QR Code Pix, R$ 80,00" | RF20, RF24, RNF04, RNF07 | Auto (`PagamentoViewModelTest`) + Manual | D |
 | CT-26 | Cancelamento (RN13) | a) cliente cancela PENDENTE; b) cliente cancela CONFIRMADA com início em 3 h; c) idem com início em 1 h; d) dono cancela CONFIRMADA sem motivo; e) com motivo | a) 200 CANCELADA, pagamento CANCELADO; b) 200; c) 422 `CANCELAMENTO_FORA_DO_PRAZO` e botão desabilitado com a regra exibida; d) 400 `VALIDACAO` com `campos[motivo]`; e) 200 com `cancelado_por=DONO` e motivo; nenhuma reserva é apagada (RN15) | RF17, RN13, RN15 | Auto (`ReservaServiceTest`) + Manual | C |
 | CT-27 | Minhas reservas, observação e visão do dono | CLIENTE: MinhasReservas (Próximas/Histórico) > DetalheReserva > editar observação; CLIENTE tenta `GET /reservas/{id}` de outro cliente; DONO: ReservasQuadra com data de amanhã | listas corretas por aba; `PATCH` 200 e observação persistida; 403 `ACESSO_NEGADO` para reserva alheia; DONO vê hora, nome/telefone do cliente, status e valor, e nunca dados do pagador | RF15, RF16, RF18, RN04, RN05 | Auto (`ReservaControllerTest`) + Manual | C |
 | CT-28 | Offline com cache | com dados sincronizados, ativar modo avião; abrir Quadras, DetalheQuadra, MinhasReservas, DetalheReserva de uma PENDENTE, Perfil; desativar o modo avião | listas abrem instantaneamente com `BannerOffline("dados de dd/MM HH:mm")`; grade de slots mostra "Conecte-se para ver horários"; QR da pendente reabre do `reserva_cache.pixCopiaECola`; botões de escrita desabilitados; ao voltar a rede, `MonitorConectividade` dispara sync e o banner some | RF23, RNF04, RNF11 | Auto (`SincronizadorTest`, `QuadrasCacheViewModelTest`) + Manual | C |
-| CT-29 | Geolocalização e degradação | Quadras > card "Ativar localização" > conceder "aproximada"; conferir distâncias e ordem; DetalheQuadra > "Abrir no Maps"; repetir negando a permissão; repetir em emulador sem fix (Extended Controls sem coordenada) | com permissão: "a X,X km" em cada card, lista ordenada, quadras sem lat/lon ao fim; Maps abre em `geo:lat,lon?q=...`; negada: ordem alfabética + texto "Ative a localização para ver a distância", app 100 % usável; sem fix: usa `lastLocation` ou `ultima_lat/lon`, senão sem distância | RF22, RNF08 | Manual | C |
+| CT-29 | Geolocalização e degradação | Quadras > card "Ativar localização" > conceder "aproximada"; conferir distâncias e ordem; DetalheQuadra > "Abrir no Maps"; repetir negando a permissão; repetir em emulador sem fix (Extended Controls sem coordenada) | com permissão: "a X,X km" em cada card, lista ordenada, quadras sem lat/lon ao fim; Maps abre em `geo:lat,lon?q=...`; negada: ordem alfabética + texto "Ative a localização para ver a distância", app 100 % usável; sem fix: o `LocalizacaoService` usa `getLastKnownPosition` ou `ultima_lat/lon` do `SessaoStore`, senão sem distância | RF22, RNF08 | Manual | C |
 | CT-30 | Webhook do Inter (Should Have) | `POST /api/v1/webhooks/inter/pix/{segredo}` com o array oficial (txid válido, valor igual); repetir; enviar txid desconhecido; enviar valor diferente; com `ngrok` em S8 verificar se o sandbox dispara após `POST /pix/v2/cob/pagar/{txid}` | 200 e reserva CONFIRMADA; repetição no-op (`end_to_end_id` UNIQUE); desconhecido -> 200 ignorado com log; valor diferente -> ignorado com `WARN`; `infoPagador` não aparece em nenhuma tabela; resultado do disparo do sandbox registrado em docs/11-integracao-pix-inter.md | RF20, RN05, RN12, RNF02 | Auto (`InterWebhookControllerTest`) + Manual | D |
-| CT-31 | Detalhe da quadra | abrir `DetalheQuadra` de uma quadra do seed pelo card da lista; conferir os campos exibidos; tocar "Abrir no Maps"; repetir com `GET /api/v1/quadras/{id}` de id inexistente e de quadra com `ativa=false` | nome, esporte, preço por hora, descrição, endereço completo e os sete dias com faixa (`08:00–22:00`) ou "Fechado" (RN19); distância exibida quando há localização (RF22); o `Intent` `geo:` abre o aplicativo de mapas; id inexistente ou quadra inativa devolvem 404 `NAO_ENCONTRADO` | RF08, RN19 | Manual | B |
+| CT-31 | Detalhe da quadra | abrir `DetalheQuadra` de uma quadra do seed pelo card da lista; conferir os campos exibidos; tocar "Abrir no Maps"; repetir com `GET /api/v1/quadras/{id}` de id inexistente e de quadra com `ativa=false` | nome, esporte, preço por hora, descrição, endereço completo e os sete dias com faixa (`08:00–22:00`) ou "Fechado" (RN19); distância exibida quando há localização (RF22); a URI `geo:` (`launchUrl` do url_launcher) abre o aplicativo de mapas; id inexistente ou quadra inativa devolvem 404 `NAO_ENCONTRADO` | RF08, RN19 | Manual | B |
 
 Cobertura por requisito: todos os RF01..RF24 e as RN01..RN20 aparecem em ao menos um dos 31 CT, exceto RN18 (chave única de recebimento: verificada por inspeção de `application-inter-*.yml` e documentada em docs/11) e RN14 (estorno manual: coberta por `PagamentoServiceTest` e por log, sem CT manual porque exige pagamento tardio real).
 
@@ -107,18 +112,22 @@ cd backend
 
 Os relatórios ficam em `backend/target/surefire-reports/` e `backend/target/failsafe-reports/`. Alguns `*ServiceTest` (`QuadraServiceTest`, `HorarioFuncionamentoServiceTest`, `PagamentoServiceTest`, `ReservaFacadeTest`) rodam contra o PostgreSQL do Testcontainers, porque as regras que verificam são consultas SQL e restrições do banco; por isso o último comando lista explicitamente os que não precisam de Docker. Variáveis mínimas nos testes: nenhuma — o profile `simulado` (forçado por `@ActiveProfiles("simulado")` nos testes de integração) já traz um `JWT_SECRET` de desenvolvimento com mais de 32 bytes.
 
-Android (sem emulador):
+App Flutter (sem emulador; Flutter 3.47.6, igual ao CI):
 
 ```bash
-cd android
-./gradlew testDebugUnitTest                      # ViewModels, Sincronizador, Geo, Validadores
-./gradlew testDebugUnitTest --tests '*PagamentoViewModelTest'
-./gradlew connectedDebugAndroidTest              # opcional: QuadraDaoTest, exige emulador/celular conectado
+cd frontend
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs   # gera *.g.dart (drift + json_serializable); rodar após mudar tabela/DTO
+flutter analyze
+flutter test                                              # ViewModels, widget tests, DAO drift em memória, Sincronizador, geo, validadores
+flutter test test/ui/pagamento/pagamento_view_model_test.dart
+flutter test --coverage                                   # opcional: coverage/lcov.info
+flutter test integration_test                             # opcional: exige emulador/celular conectado; fora do CI
 ```
 
-Relatório em `android/app/build/reports/tests/testDebugUnitTest/index.html`. No Windows, `gradlew.bat` no lugar de `./gradlew`.
+Relatório: saída do `flutter test` no terminal e no log do job `frontend` (sem HTML por padrão); cobertura opcional em `frontend/coverage/lcov.info`. No Windows os comandos são os mesmos.
 
-Testes manuais: executar a planilha `docs/anexos/execucao-ct-<data>.csv` com Swagger em `http://localhost:8080/swagger-ui.html` e o APK instalado com `adb install -r`. Para cenários com `inter-sandbox`, respeitar 8h-20h seg-sex.
+Testes manuais: executar a planilha `docs/anexos/execucao-ct-<data>.csv` com Swagger em `http://localhost:8080/swagger-ui.html` e o APK debug (`flutter build apk --debug --dart-define-from-file=config/dev.json`) instalado com `adb install -r build/app/outputs/flutter-apk/app-debug.apk`. Para cenários com `inter-sandbox`, respeitar 8h-20h seg-sex.
 
 ## 5. O que roda no CI (`.github/workflows/ci.yml`, dono A)
 
@@ -126,9 +135,9 @@ Testes manuais: executar a planilha `docs/anexos/execucao-ct-<data>.csv` com Swa
 |---|---|---|---|
 | `segredos` | `ubuntu-latest` | varredura do diff em busca de `.crt`, `.key`, `.pfx`, `.env` e de `client_secret`/`JWT_SECRET` com valor real; falha se encontrar | obrigatório para merge em `main` |
 | `backend` | `ubuntu-latest` (Docker disponível para Testcontainers) | `actions/setup-java` Temurin 25 -> `./mvnw -B verify` (compila; Surefire roda `*Test`, Failsafe roda `*IT`) -> publica `target/surefire-reports` e `target/failsafe-reports` como artefato | obrigatório para merge em `main` |
-| `android` | `ubuntu-latest` | Temurin 21 -> `./gradlew testDebugUnitTest assembleDebug` -> publica `app-debug.apk` como artefato | obrigatório para merge em `main` |
+| `frontend` | `ubuntu-latest` | `actions/setup-java@v4` Temurin 21 + `subosito/flutter-action@v2` (`flutter-version: 3.47.6`, `channel: stable`, `cache: true`) -> em `frontend/`: `flutter pub get` -> `dart run build_runner build --delete-conflicting-outputs` -> `flutter analyze` -> `flutter test` -> `flutter build apk --debug --dart-define-from-file=config/dev.json.exemplo` -> publica `app-debug.apk` como artefato; enquanto `frontend/pubspec.yaml` não existir, só imprime um aviso e passa | obrigatório para merge em `main` |
 
-Gatilhos: `pull_request` e `push` em `main` (também em `release/*`). Os três jobs são os mesmos descritos em docs/21-git-e-organizacao.md e docs/09-arquitetura.md. Meta de duração: < 10 min. Segredos: nenhum (profile `simulado`; `JWT_SECRET` de teste no repositório de testes). Regras de `main`: PR com 1 aprovação do suplente + CI verde; ninguém mergeia o próprio PR (docs/21-git-e-organizacao.md). O CI não roda `androidTest` nem testes contra o sandbox Inter (dependem de emulador e de certificado).
+Gatilhos: `pull_request` e `push` em `main` (também em `release/*`). Os três jobs são os mesmos descritos em docs/21-git-e-organizacao.md e docs/09-arquitetura.md. Meta de duração: < 10 min (job `frontend` < 8 min). Segredos: nenhum (profile `simulado`; `JWT_SECRET` de teste no repositório de testes). Regras de `main`: PR com 1 aprovação do suplente + CI verde; ninguém mergeia o próprio PR (docs/21-git-e-organizacao.md). O CI não roda `integration_test` do app nem testes contra o sandbox Inter (dependem de emulador e de certificado).
 
 ## 6. Critérios de saída
 

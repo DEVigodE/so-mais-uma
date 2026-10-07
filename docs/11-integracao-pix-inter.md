@@ -1,6 +1,6 @@
 # Integração Pix — API do Banco Inter
 
-Como o app cobra e confirma reservas via Pix usando a API Pix do Banco Inter no **sandbox** (caminho obrigatório da demonstração, sem dinheiro real), com **produção** como recomendado (só se houver CNPJ não-MEI) e o **`SimuladoPixGateway`** interno como fallback ativável por variável de ambiente. Cobre configuração passo a passo, divisão Android x backend, criação e confirmação da cobrança, cenários de erro, segurança, sandbox, código de referência, gates datados e checklist de teste manual.
+Como o app cobra e confirma reservas via Pix usando a API Pix do Banco Inter no **sandbox** (caminho obrigatório da demonstração, sem dinheiro real), com **produção** como recomendado (só se houver CNPJ não-MEI) e o **`SimuladoPixGateway`** interno como fallback ativável por variável de ambiente. Cobre configuração passo a passo, divisão app (Flutter) x backend, criação e confirmação da cobrança, cenários de erro, segurança, sandbox, código de referência, gates datados e checklist de teste manual.
 
 Dono do documento: Integrante D (suplente: A). Regras de negócio citadas: `docs/07-regras-de-negocio.md` (RN10–RN14, RN17, RN18). Contrato do backend: `docs/10-api-rest.md`. Estados e concorrência: `docs/07-regras-de-negocio.md` e `docs/08-modelagem-banco.md` (tabela `pagamento`, índice `ux_reserva_slot_ativo`).
 
@@ -88,8 +88,9 @@ Arquivo `backend/.env.exemplo` versionado com todas as chaves e valores vazios; 
 !.env.exemplo
 backend/src/main/resources/application-local*.yml
 scripts/http-client.private.env.json
-android/keystore.properties
-android/*.jks
+frontend/android/key.properties
+frontend/android/*.jks
+frontend/config/dev.json
 ```
 
 Revisão de PR verifica ausência de segredo; se um `.crt/.key` ou `client_secret` vazar, a integração é cancelada e recriada no mesmo dia (R15).
@@ -142,17 +143,17 @@ Resultado registrado na ata de 04/09 e em `docs/19-riscos.md` (R1, R2).
 | **PEM direto** (decisão) | `spring.ssl.bundle.pem.inter.keystore.certificate=file:${INTER_CRT}` e `private-key=file:${INTER_KEY}` | Sem conversão, sem senha de keystore, sem SDK; é o que o `InterRestClientConfig` usa (seção 11.3) |
 | PFX (opcional) | `openssl pkcs12 -export -out inter.pfx -inkey "Inter API_Chave.key" -in "Inter API_Certificado.crt" -aes256` e `spring.ssl.bundle.jks.inter.keystore.location/password/type=PKCS12` | Só se alguma ferramenta (Postman, SDK oficial) exigir PKCS12. O SDK Java oficial (jar fora do Maven Central) **não** é usado |
 
-## 4. O que fica no Android e o que fica obrigatoriamente no backend
+## 4. O que fica no app (Flutter) e o que fica obrigatoriamente no backend
 
-| Android (tela Pagamento, Integrante D) | Prioridade |
+| App Flutter (tela Pagamento, Integrante D) | Prioridade |
 |---|---|
-| Renderizar o QR a partir de `pixCopiaECola` com **ZXing core 3.5.4** (`QrCodeGerador.gerar(texto, 512)` -> `Bitmap` -> `Image`), componente `PixQrCode` com `contentDescription` "QR Code Pix, R$ 80,00" | obrigatório |
-| Botão **Copiar código** (`ClipboardManager`, `ClipData.newPlainText("Pix", pixCopiaECola)`) + snackbar "Código copiado" | obrigatório |
+| Renderizar o QR a partir de `pixCopiaECola` com **qr_flutter 4.1.0** (`QrImageView(data: pixCopiaECola)`), componente `PixQrCode` com rótulo semântico (`Semantics(label: ...)`) "QR Code Pix, R$ 80,00" | obrigatório |
+| Botão **Copiar código** (`Clipboard.setData(ClipboardData(text: pixCopiaECola))`) + snackbar "Código copiado" | obrigatório |
 | Contador regressivo calculado a partir de `expiraEm` (não de um timer local), mostrando `mm:ss`; ao zerar exibe "Expirado" e desabilita o QR | obrigatório |
-| **Polling** de `GET /reservas/{id}/pagamento`: a cada 5 s durante 2 min, depois a cada 10 s (RNF04), dentro de `repeatOnLifecycle(Lifecycle.State.STARTED)` (para quando a tela sai de foco); encerra em `PAGO`, `EXPIRADO`, `CANCELADO` ou `expiraEm` passado | obrigatório |
+| **Polling** de `GET /reservas/{id}/pagamento`: a cada 5 s durante 2 min, depois a cada 10 s (RNF04), com o `Timer` do `PagamentoViewModel` pausado/retomado por `AppLifecycleListener` (`onHide`/`onShow`) na tela e cancelado no `dispose()` (para quando a tela sai de foco); encerra em `PAGO`, `EXPIRADO`, `CANCELADO` ou `expiraEm` passado | obrigatório |
 | Botão **Já paguei**: apenas força um novo ciclo do polling que a tela já faz — `GET /reservas/{id}/pagamento`, mesma rota, **sem parâmetro novo** e sem chamar o Inter; serve para o cliente não esperar os 5 ou 10 s do próximo ciclo | recomendado |
-| Botão **Simular pagamento** visível só quando `BuildConfig.DEBUG`; chama `POST /dev/pagamentos/{txid}/confirmar` com `X-Dev-Key` de `BuildConfig.DEV_KEY` (definida em `local.properties`, ignorada no Git) | obrigatório (demo) |
-| Ao detectar `PENDENTE -> PAGO`: `NotificadorReserva.confirmada(reserva)` (RF24) e navegação para DetalheReserva com `popUpTo(Quadras)`; permissão `POST_NOTIFICATIONS` pedida na primeira abertura da tela Pagamento (API >= 33) | recomendado |
+| Botão **Simular pagamento** visível só quando `kDebugMode && Ambiente.devKey.isNotEmpty`; chama `POST /dev/pagamentos/{txid}/confirmar` com `X-Dev-Key` de `Ambiente.devKey` (`String.fromEnvironment('DEV_KEY')`, passada por `--dart-define-from-file=config/dev.json`; `frontend/config/dev.json` é ignorado no Git e o `config/release.json` não tem `DEV_KEY`) | obrigatório (demo) |
+| Ao detectar `PENDENTE -> PAGO`: `NotificadorReserva.confirmada(reserva)` (RF24) e navegação para DetalheReserva com `context.go(Rotas.detalheReserva(id))`; permissão `POST_NOTIFICATIONS` pedida na primeira abertura da tela Pagamento (API >= 33, via flutter_local_notifications) | recomendado |
 | Tratar `502 PAGAMENTO_INDISPONIVEL` na ConfirmarReserva ("Não foi possível gerar a cobrança, tente novamente") e `EXPIRADO` na tela Pagamento (botão "Reservar novamente" volta ao DetalheQuadra) | obrigatório |
 | Offline: `reserva_cache` guarda `pixCopiaECola` e `expiraEm`; o QR reabre sem rede com status "Aguardando conexão" (`docs/12-persistencia-local.md`) | obrigatório |
 | **Nunca**: chamar o Inter, guardar `client_id/secret`, certificado, `endToEndId` ou dados do pagador | obrigatório |
@@ -176,7 +177,7 @@ Resultado registrado na ata de 04/09 e em `docs/19-riscos.md` (R1, R2).
 ```mermaid
 sequenceDiagram
   autonumber
-  participant App as Android (tela Pagamento)
+  participant App as App Flutter (tela Pagamento)
   participant API as Backend (ReservaFacade / PagamentoService)
   participant DB as PostgreSQL
   participant Inter as Inter API Pix (sandbox|prod) ou SimuladoPixGateway
@@ -193,7 +194,7 @@ sequenceDiagram
     API->>DB: UPDATE reserva SET status=CANCELADA, cancelado_por=SISTEMA (RN17)
     API-->>App: 502 PAGAMENTO_INDISPONIVEL
   end
-  App->>App: renderiza QR (ZXing), copiar codigo, contador ate expiraEm
+  App->>App: renderiza QR (qr_flutter), copiar codigo, contador ate expiraEm
   loop polling 5 s (2 min) depois 10 s, tela visivel
     App->>API: GET /api/v1/reservas/{id}/pagamento
     API-->>App: {status PENDENTE}
@@ -427,7 +428,7 @@ A máquina da reserva (com `EXPIRADA` -> `CONFIRMADA` no pagamento tardio) está
 | **Nunca armazenar** | CPF/nome do pagador (`infoPagador`, `devedor`), `componentesValor`, dados bancários, chave Pix do cliente, `client_id/secret`, certificado, `access_token` em banco. Persistidos só `txid`, `valor`, `status`, `pix_copia_e_cola`, `location`, `end_to_end_id`, `expira_em`, `pago_em` (RNF02, RN05) | obrigatório |
 | Segredos | Somente em variáveis de ambiente / Secret Files; `.gitignore` da seção 3.4; logs mascaram `Authorization` e nunca imprimem o corpo do token | obrigatório |
 | mTLS de saída | SSL bundle `inter` em todo `RestClient` que fala com o Inter; sem `TrustAll`, sem desabilitar verificação de hostname | obrigatório |
-| Exposição ao app | O Android só vê `PagamentoResponse`; `endToEndId` e `location` nunca saem da API | obrigatório |
+| Exposição ao app | O app só vê `PagamentoResponse`; `endToEndId` e `location` nunca saem da API | obrigatório |
 | `/dev/**` | JWT válido **e** header `X-Dev-Key`; bean só existe nos profiles `simulado` e `inter-sandbox` (`@Profile`), portanto em `inter-prod` a rota nem é registrada | obrigatório |
 | **URL de callback com segmento secreto** | A URL cadastrada no Inter é `https://.../api/v1/webhooks/inter/pix/{segredo}`, onde `{segredo}` é um valor aleatório de 32 caracteres que vive só em `INTER_WEBHOOK_SEGREDO` (variável de ambiente / Render env var, nunca no Git). O `InterWebhookController` compara o segmento recebido com a variável e responde **404** para qualquer requisição em que ele não bata — inclusive para `/webhooks/inter/pix` sem segmento. Como o Inter aceita qualquer URL HTTPS no cadastro, isso não custa nada e fecha a forja sem exigir mTLS de entrada: quem não conhece o segredo não alcança o endpoint. O segredo é rotacionado recadastrando o webhook (`scripts/inter/05-webhook-cadastrar.http`) | obrigatório |
 | Validação do webhook | Além do segmento secreto: HTTPS obrigatório (Render); corpo precisa ser array; `txid` deve existir; `valor` deve ser igual ao da cobrança; campos extras ignorados; resposta 200 sem revelar nada além de `{"processados": n}` | recomendado |
@@ -730,7 +731,7 @@ Checklist (marcar na issue da S1 e repetir na S7 e no ensaio de 27/11):
 | RF19 gerar cobrança Pix | Seção 6 |
 | RF20 confirmar automaticamente | Seções 7 e 8 |
 | RF21 simular pagamento | Seções 4, 7.1 e 11.1 |
-| RF24 notificação local | Seção 4 (Android) |
+| RF24 notificação local | Seção 4 (app Flutter) |
 | RNF02 dados de pagamento | Seção 10 |
 | RNF04 polling com backoff | Seção 4 |
 | RNF05 sandbox 8h–20h e kit offline | Seções 1, 11.1 e 12 |

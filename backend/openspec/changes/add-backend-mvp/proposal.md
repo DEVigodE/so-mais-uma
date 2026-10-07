@@ -94,8 +94,8 @@ Nenhuma: `openspec/specs/` está vazio, este é o primeiro change do projeto.
   `springdoc-openapi-starter-webmvc-ui` 3.1.0; Lombok; driver PostgreSQL; Testcontainers.
 - **Integrações externas**: Banco Inter API Pix (sandbox `cdpj-sandbox.partners.uatinter.co` e
   produção), BrasilAPI CEP v2 e ViaCEP.
-- **Consumidor**: o app Android depende deste contrato. RF03 (sessão local), RF22 (geolocalização),
-  RF23 (cache Room) e RF24 (notificação local) são responsabilidade do cliente e **não** fazem parte
+- **Consumidor**: o app Flutter (Android) depende deste contrato. RF03 (sessão local), RF22 (geolocalização),
+  RF23 (cache drift) e RF24 (notificação local) são responsabilidade do cliente e **não** fazem parte
   deste change; o backend apenas fornece `latitude`/`longitude` nas quadras e o estado do pagamento
   para o polling.
 - **Documentação**: `README.md`, `docs/09-arquitetura.md`, `docs/21-git-e-organizacao.md` e

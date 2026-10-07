@@ -11,7 +11,7 @@ Dono do documento: Integrante D (com B na parte de Quadra/HorarioFuncionamento e
 | Prefixo | Todas as rotas de negócio ficam sob `/api/v1`. Só `/actuator/health`, `/swagger-ui.html` e `/v3/api-docs` ficam fora do prefixo | obrigatório |
 | Formato | `Content-Type: application/json; charset=utf-8` na requisição e na resposta. Chaves em camelCase (`precoHora`, `pixCopiaECola`). Sem envelope (`data`, `success`): a resposta é o recurso ou a lista | obrigatório |
 | Datas e horas | Instantes em ISO-8601 com offset (`2026-10-10T19:00:00-03:00`). O backend normaliza tudo para `America/Sao_Paulo` (RNF12) e responde sempre com offset `-03:00`. Datas puras (`data=2026-10-10`) e horas puras (`horaAbertura: "08:00"`) só onde a tabela indicar | obrigatório |
-| Dinheiro | String decimal com duas casas e ponto (`"80.00"`), nunca número JSON (evita erro de ponto flutuante no Kotlin). No banco é `NUMERIC(10,2)` | obrigatório |
+| Dinheiro | String decimal com duas casas e ponto (`"80.00"`), nunca número JSON (evita erro de ponto flutuante no `double` do Dart, no app). No banco é `NUMERIC(10,2)` | obrigatório |
 | Identificadores | `id` numérico `Long` (BIGINT IDENTITY). Exceção: `txid` do pagamento é string alfanumérica de 32 caracteres (UUID sem hifens) | obrigatório |
 | Enums | Strings em maiúsculas exatamente como os enums canônicos (`CLIENTE`, `FUTSAL`, `PENDENTE_PAGAMENTO`). Valor desconhecido na entrada gera 400 `VALIDACAO` | obrigatório |
 | Autenticação | `Authorization: Bearer <jwt>` em toda rota que não esteja marcada como pública | obrigatório |
@@ -20,7 +20,7 @@ Dono do documento: Integrante D (com B na parte de Quadra/HorarioFuncionamento e
 | Ordenação | Fixa por endpoint (quadras por nome; reservas por `inicio`). Ordenar por distância é feito no app (RF22), não na API | obrigatório |
 | Validação | Bean Validation nos records de request (`@Valid` no controller). Erro devolve 400 com `campos[]`. Toda validação de tamanho (`@Size`, `@Digits`, `@Pattern`) espelha o limite da coluna correspondente no banco, para que entrada grande demais vire sempre 400 `VALIDACAO` com `campos[]` e nunca 500 `ERRO_INTERNO` | obrigatório |
 | Cabeçalho `X-Dev-Key` | Exigido apenas em `/dev/**`; valor da variável `DEV_KEY`. Errado ou ausente = 403 | obrigatório (dev/sandbox) |
-| HTTPS | Obrigatório fora do ambiente de desenvolvimento (Render fornece TLS). Em dev, `http://10.0.2.2:8080` no emulador e IP da LAN no celular físico, liberado só no build `debug` via `network_security_config` (RNF09) | obrigatório |
+| HTTPS | Obrigatório fora do ambiente de desenvolvimento (Render fornece TLS). Em dev, `http://10.0.2.2:8080` no emulador e IP da LAN no celular físico, liberado só no build `debug` via `android:usesCleartextTraffic="true"` em `frontend/android/app/src/debug/AndroidManifest.xml` (RNF09) | obrigatório |
 | Idempotência | `PUT`/`DELETE` são idempotentes; `POST /reservas` não é (cada chamada tenta um novo slot), por isso o app nunca reenvia automaticamente e o "voltar" da tela Pagamento não retorna a ConfirmarReserva (ver `docs/04-telas.md`) | obrigatório |
 
 ### 1.1 Cadeia de tratamento de uma requisição
@@ -48,11 +48,11 @@ Versão textual: filtro JWT (401) -> controller com `@Valid` e `@PreAuthorize` (
 | Aspecto | Decisão |
 |---|---|
 | Token | JWT HS256 assinado com `JWT_SECRET` (>= 32 bytes, variável de ambiente), gerado por `NimbusJwtEncoder` e validado por `NimbusJwtDecoder` (Spring Security 7, sem jjwt). Validade de 7 dias (RNF01) |
-| Claims | `sub` = id do usuário, `perfil` = `CLIENTE` ou `DONO`, `nome`, `iat`, `exp`. O app guarda `token` e `expiraEm` em `SessaoDataStore` (RF03) |
+| Claims | `sub` = id do usuário, `perfil` = `CLIENTE` ou `DONO`, `nome`, `iat`, `exp`. O app guarda `token` (flutter_secure_storage) e `expiraEm` no `SessaoStore` (RF03) |
 | Authorities | Claim `perfil` vira `ROLE_CLIENTE` / `ROLE_DONO` via `PerfilAuthoritiesConverter`. `@PreAuthorize("hasRole('DONO')")` nas escritas de Quadra e HorarioFuncionamento; `hasRole('CLIENTE')` em `POST /reservas` (RN02) |
 | Propriedade | Checada no service, nunca só no controller: `quadra.dono.id == usuarioAutenticado.id` (RN03) e `reserva.cliente.id == usuarioAutenticado.id` (RN04). Falha = 403 `ACESSO_NEGADO`, mesmo que o recurso exista |
 | Rotas públicas | `POST /auth/registrar`, `POST /auth/login`, `POST /webhooks/inter/pix/{segredo}`, `GET /actuator/health`, Swagger (só fora de `inter-prod`) |
-| Logout | Não existe endpoint: o JWT não é revogável no MVP (RNF03). Sair = limpar DataStore e Room no app (RF03) |
+| Logout | Não existe endpoint: o JWT não é revogável no MVP (RNF03). Sair = `SessaoStore.limpar()` + `AppDatabase.limparTudo()` no app (RF03) |
 | 401 x 429 | `CREDENCIAL_INVALIDA` (login errado) é tratado na tela de Login; `TOKEN_INVALIDO` (token ausente/expirado em rota protegida) derruba a sessão no app uma única vez, sem retry (evita loop durante o polling de pagamento). `LOGIN_BLOQUEADO` (429) após 5 falhas em 15 minutos (RF04) |
 
 ## 3. Formato de erro (RFC 9457 + `codigo`)
@@ -83,7 +83,7 @@ As extensões do `ProblemDetail`, portanto, são `codigo`, `subcodigo` (só em 4
 |---|---|---|---|---|
 | 400 | `VALIDACAO` | Bean Validation falhou, JSON malformado, enum desconhecido, `inicio` fora da hora cheia (RN06), `motivo` ausente no cancelamento pelo DONO (RN13) | RNF06, RN06 | Marcar campos de `campos[]`; se vazio, snackbar com `detail` |
 | 401 | `CREDENCIAL_INVALIDA` | E-mail ou senha incorretos em `/auth/login` | RF02 | Mensagem na tela de Login; não derruba sessão |
-| 401 | `TOKEN_INVALIDO` | Token ausente, expirado ou assinatura inválida em rota protegida | RNF01, RNF03 | `SessaoDataStore.limpar()` + Room limpo + Login (evento único) |
+| 401 | `TOKEN_INVALIDO` | Token ausente, expirado ou assinatura inválida em rota protegida | RNF01, RNF03 | `SessaoStore.limpar()` + `AppDatabase.limparTudo()` + `redirect` para `/login` (uma única vez) |
 | 403 | `ACESSO_NEGADO` | Perfil sem permissão (DONO em `POST /reservas`), recurso de outro usuário (RN03, RN04), `X-Dev-Key` errada | RN01–RN04 | Snackbar "Você não tem acesso a este item" e voltar |
 | 404 | `NAO_ENCONTRADO` | Id inexistente; quadra inativa vista por CLIENTE (RN09); reserva sem pagamento; CEP inexistente | RF08, RF09, RN09 | Estado vazio/erro da tela |
 | 409 | `EMAIL_JA_CADASTRADO` | E-mail já existe no cadastro | RN20 | Marcar campo e-mail |
@@ -132,7 +132,7 @@ Legenda: rotas abaixo são relativas a `/api/v1` (salvo infra). Perfil: **públi
 |---|---|---|---|---|---|---|
 | POST | `/auth/registrar` | Criar usuário (`nome`, `email`, `senha`, `telefone?`, `perfil`) e devolver token (auto-login) | público | 201 `TokenResponse`; 400 `VALIDACAO`; 409 `EMAIL_JA_CADASTRADO` | RF01 | Must Have (N1) |
 | POST | `/auth/login` | `email` + `senha` -> token JWT de 7 dias | público | 200 `TokenResponse`; 400; 401 `CREDENCIAL_INVALIDA`; 429 `LOGIN_BLOQUEADO` | RF02, RF04 | Must Have (N1); 429 em N2 |
-| — | (sem endpoint) | Logout é local: limpa `SessaoDataStore` e `AppDatabase` | — | — | RF03 | Must Have (N1) |
+| — | (sem endpoint) | Logout é local: limpa `SessaoStore` e `AppDatabase` | — | — | RF03 | Must Have (N1) |
 
 `RegistrarRequest`: `telefone` (opcional, `@Size(max=20)`, espelhando a coluna).
 
@@ -341,7 +341,7 @@ Motivo: o APK instalado nos celulares dos testes com usuários (09 a 13/11) e no
 |---|---|
 | Campos de resposta só são **adicionados**, sempre opcionais (`null` permitido); nunca removidos, renomeados ou com tipo alterado | obrigatório |
 | Campos de requisição novos são opcionais com valor padrão no backend | obrigatório |
-| Valores de enum não são removidos; valor novo só entra junto com atualização do app. O app usa `ignoreUnknownKeys = true` e `coerceInputValues = true` no `Json` do kotlinx.serialization e trata enum desconhecido como estado "Outro" sem quebrar | obrigatório |
+| Valores de enum não são removidos; valor novo só entra junto com atualização do app. Os DTOs do app (json_serializable) já ignoram chaves desconhecidas por padrão, declaram campos novos como anuláveis ou com `@JsonKey(defaultValue: ...)` e tratam enum desconhecido com `@JsonKey(unknownEnumValue: ...)`, caindo no estado `OUTRO` sem quebrar | obrigatório |
 | `codigo` e `subcodigo` de erro nunca mudam de nome; códigos e subcódigos novos podem ser criados (o app cai no tratamento genérico por status HTTP) | obrigatório |
 | Rotas e métodos existentes não mudam de semântica; endpoint novo é permitido. Mudança incompatível exigiria `/api/v2` (não previsto no MVP) | obrigatório |
 | Snapshot do contrato da N1 commitado em `docs/api/openapi-n1.json` (exportado de `/v3/api-docs`); o PR que altera um DTO anexa o diff contra o snapshot | recomendado |

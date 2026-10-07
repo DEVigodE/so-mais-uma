@@ -1,13 +1,13 @@
 # Visão do produto — Só mais uma
 
-Resumo: este documento apresenta o problema, o domínio, o público-alvo, a solução proposta e o fluxo principal do app Android "Só mais uma", um aplicativo de reserva e pagamento (Pix) de quadras esportivas, e delimita o que o app não é. Ele é a evidência do critério 1 da disciplina (problema, domínio e público-alvo); os requisitos derivados estão em `docs/05-requisitos-funcionais.md`, `docs/06-requisitos-nao-funcionais.md` e `docs/07-regras-de-negocio.md`.
+Resumo: este documento apresenta o problema, o domínio, o público-alvo, a solução proposta e o fluxo principal do app Flutter (Android) "Só mais uma", um aplicativo de reserva e pagamento (Pix) de quadras esportivas, e delimita o que o app não é. Ele é a evidência do critério 1 da disciplina (problema, domínio e público-alvo); os requisitos derivados estão em `docs/05-requisitos-funcionais.md`, `docs/06-requisitos-nao-funcionais.md` e `docs/07-regras-de-negocio.md`.
 
 ## 1. Nome do projeto
 
 **Só mais uma** vem da frase que todo grupo de amigos diz no fim do jogo: "só mais uma partida". O nome carrega a promessa do produto: quando a vontade de jogar aparece, marcar a próxima partida precisa ser tão rápido quanto dizer a frase — abrir o app, achar a quadra mais perto, escolher o horário e pagar pelo Pix em menos de dois minutos.
 
 - Nome do produto (marketing e telas): **Só mais uma**
-- Identificadores de código (sem acento, padrão do projeto): `so-mais-uma` (repositório), `br.com.somaisuma` (backend), `br.com.somaisuma.app` (Android), `SoMaisUmaApp`.
+- Identificadores de código (sem acento, padrão do projeto): `so-mais-uma` (repositório), `br.com.somaisuma` (backend), `br.com.somaisuma.app` (applicationId Android), `so_mais_uma` (pacote Dart do app Flutter), `SoMaisUmaApp` (widget raiz).
 
 ## 2. Problema
 
@@ -39,15 +39,17 @@ Regras de domínio que dão forma ao produto (detalhes em `docs/07-regras-de-neg
 
 ## 4. Solução proposta
 
-Um aplicativo Android nativo (Kotlin + Jetpack Compose) apoiado por uma API REST (Spring Boot + PostgreSQL) que:
+Um aplicativo Flutter (Dart) para Android apoiado por uma API REST (Spring Boot + PostgreSQL) que:
 
 1. **Para o cliente**: lista quadras ativas com filtro por esporte e cidade, mostra a distância até cada uma (geolocalização, recurso nativo), exibe a grade de horários livres por data, cria a reserva com exclusividade garantida pelo banco, gera a cobrança Pix (QR Code e copia e cola) e confirma a reserva automaticamente quando o pagamento é detectado.
 2. **Para o dono**: cadastra e mantém suas quadras (CRUD completo, com preenchimento de endereço e coordenadas a partir do CEP via BrasilAPI), define os horários de funcionamento por dia da semana (CRUD completo), acompanha as reservas recebidas por data e cancela quando necessário.
-3. **Para os dois**: autenticação por e-mail e senha com JWT, sessão local, cache offline para leitura (Room + DataStore) e mensagens de erro claras.
+3. **Para os dois**: autenticação por e-mail e senha com JWT, sessão local, cache offline para leitura (drift + `SessaoStore`) e mensagens de erro claras.
 
 O pagamento usa a **API Pix do Banco Inter** (sandbox como caminho obrigatório de demonstração; produção recomendada se o grupo obtiver conta PJ) atrás de uma interface `PixGateway`, com `SimuladoPixGateway` como fallback interno para desenvolvimento e demonstração sem dependência externa. Detalhes em `docs/11-integracao-pix-inter.md`.
 
-Stack fechada (justificativa em `docs/09-arquitetura.md`): Android nativo Kotlin + Jetpack Compose; backend Spring Boot 4.1 (Java, JDK 21); PostgreSQL 18; REST/JSON; Git + GitHub em monorepo.
+Stack fechada (justificativa em `docs/09-arquitetura.md`): app Flutter 3.47 (Dart) com alvo Android (APK); backend Spring Boot 4.1 (Java, JDK 21); PostgreSQL 18; REST/JSON; Git + GitHub em monorepo.
+
+Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter (decisão do projeto em 06/10/2026); a plataforma-alvo continua Android e o backend não mudou.
 
 ## 5. Público-alvo
 
@@ -97,22 +99,22 @@ Lucas quer jogar society no sábado 10/10/2026 às 19h. Ele abre o app já logad
 
 Todas as rotas têm o prefixo `/api/v1` e exigem `Authorization: Bearer <JWT>`, exceto as marcadas como públicas. Contrato completo em `docs/10-api-rest.md`; telas em `docs/04-telas.md`.
 
-| Passo | O que o usuário faz | Tela (Compose) | Endpoint | Resultado esperado e erros tratados |
+| Passo | O que o usuário faz | Tela (Flutter) | Endpoint | Resultado esperado e erros tratados |
 |---|---|---|---|---|
-| 1 | Abre o app | `Splash` | nenhum: lê `SessaoDataStore` (`token_jwt`, `token_expira_em`, `usuario_perfil`) | Sessão válida -> `HomeCliente` (bottom-nav Quadras / Reservas / Perfil). Sem sessão -> passo 1a |
-| 1a | Cria conta ou entra | `Cadastro` / `Login` | `POST /auth/registrar` (público, 201) ou `POST /auth/login` (público, 200) | `TokenResponse{token, expiraEm, usuario}` salvo no DataStore (RF01, RF02, RF03). Erros: 400 `VALIDACAO`, 409 `EMAIL_JA_CADASTRADO`, 401 `CREDENCIAL_INVALIDA`, 429 `LOGIN_BLOQUEADO` (RF04) |
-| 2 | Encontra a quadra | `Quadras` | `GET /quadras?esporte=FUTEBOL_SOCIETY&cidade=` | Lista de quadras ativas (RF07). O app calcula a distância com `LocalizacaoProvider` + Haversine e ordena por proximidade (RF22); sem permissão, ordem alfabética. Offline: cache `quadra_cache` + `BannerOffline` (RF23) |
+| 1 | Abre o app | `Splash` | nenhum: lê `SessaoStore` (`token_jwt`, `token_expira_em`, `usuario_perfil`) | Sessão válida -> home do cliente `/quadras` (bottom-nav Quadras / Reservas / Perfil). Sem sessão -> passo 1a |
+| 1a | Cria conta ou entra | `Cadastro` / `Login` | `POST /auth/registrar` (público, 201) ou `POST /auth/login` (público, 200) | `TokenResponse{token, expiraEm, usuario}` salvo no `SessaoStore` (token no flutter_secure_storage) (RF01, RF02, RF03). Erros: 400 `VALIDACAO`, 409 `EMAIL_JA_CADASTRADO`, 401 `CREDENCIAL_INVALIDA`, 429 `LOGIN_BLOQUEADO` (RF04) |
+| 2 | Encontra a quadra | `Quadras` | `GET /quadras?esporte=FUTEBOL_SOCIETY&cidade=` | Lista de quadras ativas (RF07). O app calcula a distância com `LocalizacaoService` (geolocator) + Haversine e ordena por proximidade (RF22); sem permissão, ordem alfabética. Offline: cache `quadra_cache` + `BannerOffline` (RF23) |
 | 3 | Vê o detalhe | `DetalheQuadra(id)` | `GET /quadras/{id}` | Dados, endereço, horários de funcionamento, distância, botão "Abrir no Maps" (RF08). 404 `NAO_ENCONTRADO` |
 | 4 | Seleciona data e horário | `DetalheQuadra(id)` (seletor de data hoje..hoje+14 + grade de slots) | `GET /quadras/{id}/slots?data=2026-10-10` | Slots de 60 min com status `LIVRE`, `OCUPADO`, `PASSADO`, `FECHADO` (RF12). 422 `DATA_FORA_DA_JANELA` se data > hoje+14 (RN09). Toque em slot `LIVRE` -> passo 5 |
 | 5 | Reserva | `ConfirmarReserva(quadraId, inicioIso)` | `POST /reservas {quadraId, inicio: "2026-10-10T19:00:00-03:00", observacao?}` | 201 `ReservaResponse` com `status = PENDENTE_PAGAMENTO`, `expiraEm = criadoEm + 15 min` e `pagamento{txid, pixCopiaECola, valor, expiraEm, status}` (RF13, RF19, RN10). Erros: 409 `HORARIO_INDISPONIVEL` -> snackbar e recarrega os slots (RN08); 422 `RESERVA_PENDENTE_EXISTENTE` -> leva à reserva pendente (RN11); 422 `FORA_DO_FUNCIONAMENTO` (RN09); 502 `PAGAMENTO_INDISPONIVEL` -> "Não foi possível gerar a cobrança, tente novamente" (RN17) |
-| 6 | Paga | `Pagamento(reservaId)` | `GET /reservas/{id}/pagamento` a cada 5 s por 2 min, depois a cada 10 s, enquanto a tela está visível (RNF04). No backend, `ConsultaPagamentoJob` consulta o gateway a cada 60 s. Em desenvolvimento/sandbox: botão "Simular pagamento" -> `POST /dev/pagamentos/{txid}/confirmar` (RF21) | QR Code gerado no app a partir de `pixCopiaECola` (ZXing) + botão "Copiar código" + contador regressivo de 15 min. O usuário paga no app do banco. Status `PENDENTE` -> `PAGO` (RF20, RN12). Se o tempo acabar: `EXPIRADO` / reserva `EXPIRADA` e o slot é liberado (RF14) |
+| 6 | Paga | `Pagamento(reservaId)` | `GET /reservas/{id}/pagamento` a cada 5 s por 2 min, depois a cada 10 s, enquanto a tela está visível (RNF04). No backend, `ConsultaPagamentoJob` consulta o gateway a cada 60 s. Em desenvolvimento/sandbox: botão "Simular pagamento" -> `POST /dev/pagamentos/{txid}/confirmar` (RF21) | QR Code gerado no app a partir de `pixCopiaECola` (qr_flutter, componente `PixQrCode`) + botão "Copiar código" + contador regressivo de 15 min. O usuário paga no app do banco. Status `PENDENTE` -> `PAGO` (RF20, RN12). Se o tempo acabar: `EXPIRADO` / reserva `EXPIRADA` e o slot é liberado (RF14) |
 | 7 | Recebe a confirmação | `Pagamento` -> `DetalheReserva(id)` | `GET /reservas/{id}` | Reserva `CONFIRMADA`; notificação local "Reserva confirmada! Arena Society Centro, 10/10 às 19h" (RF24, recomendado); a reserva aparece em `MinhasReservas` (RF15) e fica no cache `reserva_cache` para leitura offline (RF23) |
 
 ### 7.3 Diagrama do fluxo principal
 
 ```mermaid
 flowchart TD
-    A["Abre o app (Splash)"] --> B{Sessão válida no DataStore?}
+    A["Abre o app (Splash)"] --> B{Sessão válida no SessaoStore?}
     B -- não --> C["Login / Cadastro<br/>POST /auth/login | /auth/registrar"]
     C --> D
     B -- sim --> D["Quadras<br/>GET /quadras?esporte=&cidade=<br/>distância via geolocalização"]
@@ -132,7 +134,7 @@ Versão textual: Splash -> (Login/Cadastro se não houver sessão) -> Quadras ->
 
 ```mermaid
 sequenceDiagram
-    participant App as Android (Pagamento)
+    participant App as App Flutter (Pagamento)
     participant API as Backend (ReservaFacade / PagamentoService)
     participant DB as PostgreSQL
     participant Pix as PixGateway (Inter sandbox | Simulado)
@@ -156,7 +158,7 @@ sequenceDiagram
 
 ### 7.5 Fluxo do dono (secundário, mas obrigatório)
 
-`Splash` -> `HomeDono` (bottom-nav MinhasQuadras / Reservas / Perfil) -> `MinhasQuadras` (`GET /quadras/minhas`) -> `FormQuadra` (`GET /cep/{cep}` preenche endereço e coordenadas; `POST /quadras` ou `PUT /quadras/{id}`) -> `HorariosQuadra` (`POST/PUT/DELETE /quadras/{id}/horarios-funcionamento[/{hid}]`) -> `ReservasQuadra` (`GET /quadras/{id}/reservas?data=`; `POST /reservas/{id}/cancelar` com motivo). Este fluxo cobre os dois CRUDs completos exigidos pelo critério 3 (Quadra e HorarioFuncionamento).
+`Splash` -> home do dono `/dono/quadras` (bottom-nav MinhasQuadras / Reservas / Perfil) -> `MinhasQuadras` (`GET /quadras/minhas`) -> `FormQuadra` (`GET /cep/{cep}` preenche endereço e coordenadas; `POST /quadras` ou `PUT /quadras/{id}`) -> `HorariosQuadra` (`POST/PUT/DELETE /quadras/{id}/horarios-funcionamento[/{hid}]`) -> `ReservasQuadra` (`GET /quadras/{id}/reservas?data=`; `POST /reservas/{id}/cancelar` com motivo). Este fluxo cobre os dois CRUDs completos exigidos pelo critério 3 (Quadra e HorarioFuncionamento).
 
 ## 8. O que o app NÃO é (limites do MVP)
 
@@ -165,7 +167,7 @@ sequenceDiagram
 | Um marketplace com repasse financeiro ao dono | Todo Pix cai na única chave configurada da plataforma; repasse ocorre fora do app | RN18; `docs/02-escopo-mvp.md` (FORA) |
 | Um sistema de estorno/devolução | Cancelamento não estorna; estorno é manual e fora do app | RN13, RN14 |
 | Um app de "racha" (dividir o valor entre jogadores) | Múltiplos pagamentos por reserva estão fora do domínio do MVP | FORA (trabalhos futuros) |
-| Um mapa interativo ou app de navegação | Mostra distância e abre o app de mapas do celular por Intent; sem Maps SDK | RF22; FORA |
+| Um mapa interativo ou app de navegação | Mostra distância e abre o app de mapas do celular pela URI `geo:` (url_launcher); sem Maps SDK | RF22; FORA |
 | Uma rede social esportiva (avaliações, favoritos, chat) | Entidades e telas sem critério correspondente | FORA |
 | Um painel de administração da plataforma (perfil ADMIN, aprovação de quadras) | Dois perfis bastam; o DONO administra apenas as próprias quadras | `docs/03-perfis-e-permissoes.md` |
 | Um app que funciona offline para reservar ou pagar | Escritas são sempre online; a verdade é o servidor; cache só para leitura | RNF11, RF23 |
