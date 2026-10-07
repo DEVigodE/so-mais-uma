@@ -1,5 +1,7 @@
 # 17. Checklist da Entrega N1 (28/09 a 02/10/2026)
 
+Atualizado em 06/10/2026: este checklist foi escrito para o stack Android nativo vigente até a N1; desde 06/10/2026 o app é Flutter — equivalências em docs/09-arquitetura.md. Itens do app que forem reapresentados na N2 seguem o stack Flutter.
+
 Lista verificável do que precisa estar pronto para a apresentação da N1, separada por área, com responsável e forma de evidência, mais o calendário da semana (congelamento em `release/n1` na terça 29/09, teste do README em máquina limpa, tag `v0.1-n1`) e o roteiro de 5 minutos da demo.
 
 Escopo da N1 (ver docs/02-escopo-mvp.md): Must Have (N1) = RF01, RF02, RF03, RF05, RF06, RF07, RF08, RF09, RF10, RF11 com telas + backend de RF12, RF13, RF14 e RF19 pronto e demonstrável via Swagger. Reserva e pagamento **não** têm tela na N1; isso é dito na apresentação como decisão de escopo, não como atraso.

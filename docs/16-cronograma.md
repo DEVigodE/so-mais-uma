@@ -2,6 +2,8 @@
 
 Plano de 15 semanas (S1 a S15) para o app "Só mais uma", com objetivo, atividades por integrante (com a história `US-nn` correspondente), entregável e gates de cada semana, feriados descontados, os gates do Banco Inter que mexem na semana e regras de corte em caso de atraso.
 
+> **Nota de 06/10/2026 (terça, S6).** Até a Entrega N1 (S1 a S5) o app era planejado em Android nativo (Kotlin + Jetpack Compose + Room + DataStore + Retrofit + Gradle); as semanas S1 a S5 abaixo ficam como foram planejadas e feitas e não foram reescritas. A partir de 06/10/2026, por decisão do projeto, o app é **Flutter (Dart)** na pasta `frontend/`, com a plataforma-alvo do MVP ainda Android (APK instalado via `adb`); o backend não muda. O mapeamento completo (pastas, bibliotecas, versões, comandos) está em docs/09-arquitetura.md. A migração usa a folga de 10 h da S6 (criar `frontend/` com `flutter create`, `pubspec.yaml` com as versões fixadas, job `frontend` no CI, portar o que já existir do app); de S6 em diante, Room, DataStore, Retrofit, Compose e o Gradle do app foram trocados pelos equivalentes Flutter (drift, `SessaoStore`, dio, widgets Material 3, `flutter build apk`).
+
 ## 16.1 Parâmetros do plano
 
 | Parâmetro | Valor |
@@ -10,8 +12,8 @@ Plano de 15 semanas (S1 a S15) para o app "Só mais uma", com objetivo, atividad
 | Orçamento | 4 integrantes x 10 h/semana = 40 h/semana; ~560 h no total (S1 é parcial e 4 semanas têm feriado) |
 | Feriados descontados | seg 07/09 (S2), seg 12/10 (S7), seg 02/11 (S10), sex 20/11 (S12) — cada um retira 8 h da semana |
 | Marcos oficiais | Checkpoint 1 sex 11/09 · Entrega N1 28/09 a 02/10 · Checkpoint 2 sex 06/11 · Testes com usuários 09 a 13/11 · Congelamento de escopo sex 27/11 · Documentação final sex 04/12 · Apresentação N2 07 a 11/12 |
-| Semanas de folga | S6 (30 h planejadas de 40; 10 h de reserva para pendências da N1) e S12 (24 h planejadas de 32; 8 h de reserva para correções dos testes com usuários); a diferença é reserva intencional e não é preenchida no planejamento de segunda-feira |
-| Rituais | seg 30 min de planejamento (board em docs/14-backlog.md); sex 15 min de demo interna do que roda no `main` + `git shortlog -sn -- backend android docs` (A); PR < 400 linhas com aprovação do suplente e CI verde (ver docs/21-git-e-organizacao.md) |
+| Semanas de folga | S6 (30 h planejadas de 40; 10 h de reserva para pendências da N1, alocadas em 06/10/2026 à migração do app para Flutter) e S12 (24 h planejadas de 32; 8 h de reserva para correções dos testes com usuários); a diferença é reserva intencional e não é preenchida no planejamento de segunda-feira |
+| Rituais | seg 30 min de planejamento (board em docs/14-backlog.md); sex 15 min de demo interna do que roda no `main` + `git shortlog -sn --no-merges -- backend frontend docs` (A); PR < 400 linhas com aprovação do suplente e CI verde (ver docs/21-git-e-organizacao.md) |
 | Estimativas | P <= 3 h, M <= 8 h, G <= 16 h (G obrigatoriamente quebrada em issues menores). A soma da coluna Est. de cada semana é conferida com P = 3 h, M = 8 h e G = 16 h e tem de caber nas horas úteis da semana; nenhum integrante passa de ~10 h na semana (~8 h nas semanas com feriado) |
 | Definição de "semana entregue" | o entregável da semana está no `main`, o CI está verde e foi demonstrado na sexta |
 | Legenda | **[INTER]** = burocracia/gate do Banco Inter (ver docs/11-integracao-pix-inter.md); **[REC]** = recomendado; **[OPC]** = opcional; prioridades por RF em docs/05-requisitos-funcionais.md |
@@ -26,8 +28,8 @@ Plano de 15 semanas (S1 a S15) para o app "Só mais uma", com objetivo, atividad
 | S3 | 14/09 – 18/09 | 40 | Auth backend, `V1__init.sql` final e backend das 4 fatias no Swagger | [INTER] 18/09 pedido de produção (se houver CNPJ) |
 | S4 | 21/09 – 25/09 | 40 | Login no emulador + 7 telas da N1 + documentação v1 + IT de concorrência | — |
 | S5 | 28/09 – 02/10 | 40 | **Entrega N1** | congelar `release/n1` ter 29/09 · [INTER] 29/09 renovar certificado · tag `v0.1-n1` |
-| S6 | 05/10 – 09/10 | 40 (30 planejadas) | Reserva e pagamento ponta a ponta com `SimuladoPixGateway` (tela Pagamento, polling, bloqueio de login) | folga de 10 h |
-| S7 | 12/10 (feriado) – sex 16/10 | 32 | Inter sandbox dentro do app + Room | [INTER] **sex 16/10 go/no-go produção** |
+| S6 | 05/10 – 09/10 | 40 (30 planejadas) | Migração do app para Flutter (`frontend/`) + reserva e pagamento ponta a ponta com `SimuladoPixGateway` (tela Pagamento, polling, bloqueio de login) | folga de 10 h (usada na migração para Flutter, decidida em 06/10) |
+| S7 | 12/10 (feriado) – sex 16/10 | 32 | Inter sandbox dentro do app + cache drift | [INTER] **sex 16/10 go/no-go produção** |
 | S8 | 19/10 – 23/10 | 40 | Sandbox estabilizado + telas do dono | [INTER] 23/10 sandbox no app (criar -> pagar -> CONCLUIDA) |
 | S9 | 26/10 – 30/10 | 40 | Recurso nativo + beta na nuvem | [INTER] ter 27/10 renovar certificado · 30/10 Render em HTTPS (webhook) |
 | S10 | 02/11 (feriado) – sex 06/11 | 32 | Bug bash, acessibilidade, roteiro de testes | **Checkpoint 2 (sex 06/11)** · `release/beta` qua 04/11 · tag `v0.2-beta` |
@@ -58,6 +60,7 @@ gantt
     V1__init.sql rascunho (usuario congelada) :f3, 02/09/2026, 3d
     Protótipo Figma e backlog        :f2, 07/09/2026, 5d
     V1__init.sql final               :f4, 14/09/2026, 5d
+    Migração do app para Flutter (frontend/) :f5, 06/10/2026, 4d
     section Auth e usuário (A)
     Auth backend JWT (RF01, RF02)    :a1, 14/09/2026, 5d
     Splash, Login, Cadastro, NavHost :a2, 21/09/2026, 5d
@@ -68,12 +71,12 @@ gantt
     CRUD Quadra e Horario backend e seed V2 (RF06, RF11, RF09, RF10) :b1, 14/09/2026, 5d
     Telas Quadras, MinhasQuadras, FormQuadra, HorariosQuadra :b2, 21/09/2026, 5d
     Grade de slots e seletor de data no DetalheQuadra (RF12) :b4, 05/10/2026, 5d
-    Room quadra_cache e Sincronizador (RF23) :b3, 13/10/2026, 4d
+    drift quadra_cache e Sincronizador (RF23) :b3, 13/10/2026, 4d
     section Reservas e nativo (C)
     SlotService e POST /reservas 409 (RF12, RF13) :c1, 14/09/2026, 5d
     Expiração e ReservaFacade (RF14) :c7, 21/09/2026, 5d
     ConfirmarReserva e DetalheReserva (RF13, RF16, RF17) :c2, 05/10/2026, 5d
-    Room reserva_cache e offline :c3, 13/10/2026, 4d
+    drift reserva_cache e offline :c3, 13/10/2026, 4d
     ReservasQuadra e cancelamento do dono (RF18) :c4, 19/10/2026, 5d
     Geolocalização (RF22) e notificação (RF24) :c5, 26/10/2026, 5d
     Testes com usuários e correções :c6, 09/11/2026, 10d
@@ -88,7 +91,7 @@ gantt
     Documentação final e ensaios :e2, 30/11/2026, 5d
 ```
 
-Versão textual (15 semanas): fundação e CP1 (S1–S2) -> auth backend e CRUDs (S3) -> telas da N1 e documentação v1 (S4) -> N1 (S5) -> reserva e pagamento simulado (S6) -> sandbox Inter e Room (S7–S8) -> geolocalização e nuvem (S9) -> CP2 (S10) -> usuários (S11) -> correções (S12) -> congelamento (S13) -> documentação (S14) -> N2 (S15).
+Versão textual (15 semanas): fundação e CP1 (S1–S2) -> auth backend e CRUDs (S3) -> telas da N1 e documentação v1 (S4) -> N1 (S5) -> migração do app para Flutter, reserva e pagamento simulado (S6) -> sandbox Inter e cache drift (S7–S8) -> geolocalização e nuvem (S9) -> CP2 (S10) -> usuários (S11) -> correções (S12) -> congelamento (S13) -> documentação (S14) -> N2 (S15).
 
 ## 16.4 Detalhe semana a semana
 
@@ -162,23 +165,25 @@ Objetivo: entregar e apresentar a N1 com repositório congelado. Checklist compl
 
 Entregável (**N1**): documentação, modelagem, arquitetura, protótipo, app parcialmente funcional, repositório organizado, tag `v0.1-n1`.
 
-### S6 — 05/10 a 09/10 (40 h, 30 h planejadas) — Reserva ponta a ponta com simulado
+### S6 — 05/10 a 09/10 (40 h, 30 h planejadas) — Migração para Flutter e reserva ponta a ponta com simulado
 
-Objetivo: o cliente reserva, paga (simulado) e vê CONFIRMADA dentro do app. Semana de folga: 10 h reservadas para pendências apontadas na N1. Recebe o que saiu das S2 e S4: tela Pagamento com a consulta periódica de status e o bloqueio de login.
+Objetivo: o app migrado para Flutter em `frontend/` e, nele, o cliente reserva, paga (simulado) e vê CONFIRMADA. Semana de folga: as 10 h reservadas para pendências apontadas na N1 foram alocadas em 06/10/2026 à migração do app para Flutter (decisão do projeto; ver a nota no topo e docs/09-arquitetura.md). Recebe o que saiu das S2 e S4: tela Pagamento com a consulta periódica de status e o bloqueio de login.
 
 | Integrante | Atividades | US | Est. |
 |---|---|---|---|
+| A | **Migração, parte 1 (ter 06/10):** `flutter create --org br.com.somaisuma --project-name so_mais_uma --platforms android frontend` com Flutter 3.47.6; `frontend/pubspec.yaml` com as versões fixadas de docs/09 e `pubspec.lock` versionado; `frontend/android/app/build.gradle.kts` com applicationId `br.com.somaisuma.app`, minSdk 26, `applicationIdSuffix ".debug"` e desugaring; `config/dev.json.exemplo` e `config/release.json`; `.gitignore` do app; job `frontend` do CI verde (docs/21-git-e-organizacao.md, seção 21.7) | — | P (3 h, folga) |
+| Todos | **Migração, parte 2:** cada titular porta para `frontend/lib/` e `frontend/test/` o que já existir da própria fatia no app (telas, ViewModels, repositórios, testes), seguindo a árvore de docs/09; A porta `SessaoStore`, `AuthInterceptor` (dio), `rotas.dart` + `AppRouter`, tema e `dependencias.dart`; `flutter analyze` e `flutter test` verdes | — | P (A 1 h; B, C e D 2 h cada = 7 h, folga) |
 | C | ConfirmarReserva com 409/422/502 (RF13), DetalheReserva com editar observação e cancelar (RF16, RF17, RN13) | US-29, US-30, US-32 | M |
-| D | Tela Pagamento v1 (QR via `QrCodeGerador`/ZXing) com simulado; polling do app (5 s por 2 min, depois 10 s), contador regressivo, `ConsultaPagamentoJob` (60 s, <= 10 por ciclo) (RF19, RF20) | US-37b, US-38 | M |
+| D | Tela Pagamento v1 (QR via `PixQrCode`/qr_flutter) com simulado; polling do app (5 s por 2 min, depois 10 s; `Timer` no ViewModel, cancelado no `dispose()`), contador regressivo, `ConsultaPagamentoJob` (60 s, <= 10 por ciclo) (RF19, RF20) | US-37b, US-38 | M |
 | B | Grade de slots e seletor de data no DetalheQuadra (RF12), com C revisando o contrato de `SlotResponse`; ajustes pós-N1 e revisão dos PRs de C | US-28 | M |
 | A | Tela MinhasReservas (RF15) | US-31 | P |
 | A | Bloqueio do login por 15 min após 5 falhas seguidas (`LoginTentativasService` em memória, 429 `LOGIN_BLOQUEADO`, RF04) — única semana em que a funcionalidade aparece; esqueleto de docs/23-plano-de-testes.md | US-12 | P |
 
-30 h planejadas de 40 h úteis: as 10 h restantes são reserva intencional para as pendências apontadas na N1 e não devem ser preenchidas no planejamento de segunda-feira.
+30 h planejadas de 40 h úteis no planejamento de segunda 05/10: as 10 h restantes eram reserva intencional para as pendências apontadas na N1 e, na terça 06/10/2026, foram alocadas à migração para Flutter (as duas linhas "Migração" acima, 3 h + 7 h). A semana fecha em 40 h e ninguém passa de 10 h (A: 3 + 3 + 3 + 1; B, C e D: 8 + 2). Pendências da N1 que não couberem voltam ao backlog (regra 5 de 16.6).
 
-Entregável: reservar -> pagar (simulado) -> CONFIRMADA no app.
+Entregável: `frontend/` buildando nos 4 notebooks com Flutter 3.47.6 e job `frontend` verde no CI; reservar -> pagar (simulado) -> CONFIRMADA no app Flutter.
 
-### S7 — 12/10 (feriado) a sex 16/10 (32 h) — Inter sandbox no app + Room
+### S7 — 12/10 (feriado) a sex 16/10 (32 h) — Inter sandbox no app + cache drift
 
 Objetivo: cobrança real criada no sandbox pelo app; app abre offline com cache.
 
@@ -186,8 +191,8 @@ Objetivo: cobrança real criada no sandbox pelo app; app abre offline com cache.
 |---|---|---|---|
 | D | `InterPixGateway` (RestClient + SSL bundle PEM, `InterTokenService` com cache de 55 min, `PUT`/`GET /pix/v2/cob/{txid}`), `application-inter-sandbox.yml` | US-39 | M |
 | D | **[INTER] sex 16/10: go/no-go de produção** (integração "Ativo" + cobrança real de R$ 1,00 testada; senão produção sai definitivamente) | US-42 | P |
-| B | Room `quadra_cache` (`QuadraEntity`, PK composta `id + escopo`), `QuadraDao`, `Sincronizador` (RF23) | US-43 | M |
-| C | Room `reserva_cache` (com `pixCopiaECola` e `expiraEm`), `ReservaDao`, `BannerOffline`, `MonitorConectividade` (RF23, RNF11) | US-44 | M |
+| B | drift `quadra_cache` (tabela `QuadraCache`, PK composta `id + escopo`), `QuadraDao` (`@DriftAccessor`), `Sincronizador` (RF23); `dart run build_runner build --delete-conflicting-outputs` após mudar a tabela | US-43 | M |
+| C | drift `reserva_cache` (tabela `ReservaCache`, com `pixCopiaECola` e `expiraEm`), `ReservaDao`, `BannerOffline`, `MonitorConectividade` com connectivity_plus (RF23, RNF11) | US-44 | M |
 | A | `Dockerfile` multi-stage (`eclipse-temurin:21-jre`) antecipado de S8, com o backend subindo em contêiner no notebook | US-57 | P |
 
 Entregável: cobrança real no sandbox criada pelo app (dentro de 8h–20h, seg–sex); app abre offline com cache.
@@ -201,7 +206,7 @@ Objetivo: fluxo completo em `inter-sandbox`; dono gerencia reservas recebidas.
 | D | `/dev/pagamentos/{txid}/confirmar` em `inter-sandbox` repassando para `POST /pix/v2/cob/pagar/{txid}` (escopo `pix.write`) -> `ConsultaPagamentoJob` detecta CONCLUIDA (RF20, RF21; **meta sex 23/10**); teste de webhook com `ngrok` e registro em docs/11 se o sandbox dispara; `PagamentoServiceTest`, `InterPixGatewayTest` | US-40, US-47b | M + P |
 | C | ReservasQuadra (RF18), cancelamento pelo dono com motivo (RN13), casos de borda de pagamento tardio/cancelado (RN14, log `ESTORNO_MANUAL`); `ReservaServiceTest`, `ReservaFacadeTest` (revisão de D) | US-33, US-45, US-47b | M + P |
 | B | 409 `HORARIO_COM_RESERVAS` em `PUT`/`DELETE` de horário (RN16) | US-15 | M |
-| A | Pipeline de release (assinatura do APK, `BuildConfig.API_BASE_URL` por build type) completando o `Dockerfile` de S7 | US-57 | P |
+| A | Pipeline de release (assinatura do APK com keystore e `frontend/android/key.properties` fora do repositório, `Ambiente.apiBaseUrl` via `--dart-define-from-file=config/release.json`) completando o `Dockerfile` de S7 | US-57 | P |
 
 Entregável: criar -> pagar -> CONCLUIDA -> CONFIRMADA em `inter-sandbox`; decisão sobre webhook documentada.
 
@@ -211,10 +216,10 @@ Objetivo: lista de quadras com distância; backend público; APK instalável via
 
 | Integrante | Atividades | US | Est. |
 |---|---|---|---|
-| C | Geolocalização (RF22): `LocalizacaoProvider` (cadeia `getCurrentLocation` -> `lastLocation` -> DataStore -> sem distância), permissão pedida no card "Ativar localização", `Geo.kt` (Haversine), ordenação por proximidade, "Abrir no Maps" via Intent `geo:`; `NotificadorReserva` (RF24) [REC] | US-22, US-46 | M + P |
-| A | Deploy **Render + Neon** (**meta sex 30/10**), variáveis de ambiente e Secret Files; APK release assinado; `adb install` em 2 celulares; avaliar conta de distribuição limitada do Google | US-58, US-59 | M + P |
+| C | Geolocalização (RF22): `LocalizacaoService` com geolocator (cadeia `getCurrentPosition` -> `getLastKnownPosition` -> `ultima_lat/lon` do `SessaoStore` -> sem distância), permissão pedida no card "Ativar localização", `geo.dart` (Haversine), ordenação por proximidade, "Abrir no Maps" via URI `geo:` com url_launcher; `NotificadorReserva` com flutter_local_notifications (RF24) [REC] | US-22, US-46 | M + P |
+| A | Deploy **Render + Neon** (**meta sex 30/10**), variáveis de ambiente e Secret Files; APK release assinado (`flutter build apk --release --dart-define-from-file=config/release.json`); `adb install` em 2 celulares; avaliar conta de distribuição limitada do Google | US-58, US-59 | M + P |
 | D | **[INTER] ter 27/10: renovar certificado sandbox**; cadastrar webhook `PUT /pix/v2/webhook/{chave}` se o Render estiver em HTTPS [REC] | US-05, US-41 | P + M |
-| B | Coil para `foto_url` [REC] — só com todos os OBR verdes | US-23 | P |
+| B | cached_network_image para `foto_url` [REC] — só com todos os OBR verdes | US-23 | P |
 
 Entregável: backend público; APK beta nos 4 celulares; lista com "a 2,3 km".
 
@@ -224,7 +229,7 @@ Objetivo: beta funcional aprovado; roteiro dos testes com usuários pronto.
 
 | Integrante | Atividades | US | Est. |
 |---|---|---|---|
-| Todos | Bug bash cruzado (cada um testa a fatia do outro, ter 03/11); acessibilidade básica em cada tela (RNF07: `contentDescription`, alvos 48 dp, fonte 200 %, TalkBack) com 1 commit do revisor por tela | US-48 | P por integrante (12 h) |
+| Todos | Bug bash cruzado (cada um testa a fatia do outro, ter 03/11); acessibilidade básica em cada tela (RNF07: `Semantics`/`semanticLabel`, alvos 48 dp, fonte 200 %, TalkBack) com 1 commit do revisor por tela | US-48 | P por integrante (12 h) |
 | C | Roteiro dos testes com usuários (docs/22: 6 tarefas, SUS, termo de consentimento); recrutar 5–8 usuários com B | US-49 | M |
 | D | docs/23 com CT-xx por RF executados e resultado registrado | US-51 | M |
 | A | Congelar `release/beta` qua 04/11; tag `v0.2-beta`; `/actuator/health` aquecido antes do CP2 | — | P |
@@ -253,7 +258,7 @@ Objetivo: fechar o top-5 de usabilidade. Semana de folga: 8 h reservadas para o 
 | D | Ensaio da demo nos profiles `inter-sandbox` e `simulado` | US-60 | P |
 | D | Kit de demo offline v1 (jar + Postgres em Docker + hotspot + APK debug apontando para o IP do notebook) | US-60 | P |
 | B | Revisão DER (docs/08) x banco real (`\d` no psql) | — | P |
-| A | `git shortlog -sn -- backend android docs` consolidado; alerta se algum integrante estiver abaixo em alguma pasta | — | P |
+| A | `git shortlog -sn --no-merges -- backend frontend docs` consolidado; alerta se algum integrante estiver abaixo em alguma pasta | — | P |
 | [OPC] | Biometria, remarcar reserva, desativar conta, bloqueio pontual — só se tudo acima estiver verde | — | — |
 
 24 h planejadas de 32 h úteis: as 8 h restantes são reserva intencional para o que os testes com usuários revelarem além do top-5 e não devem ser preenchidas no planejamento de segunda-feira.
@@ -275,7 +280,7 @@ Entregável (**sex 27/11**): escopo congelado; tag `v1.0-rc1`; item novo só ent
 
 | Integrante | Atividades | US |
 |---|---|---|
-| A (editor) | Consolidar docs/00 a 23 + README final (tabela de versões verificada em 01/09/2026) + matriz de rastreabilidade critério -> evidência -> defensor | US-55 |
+| A (editor) | Consolidar docs/00 a 23 + README final (tabela de versões verificada em 01/09/2026; versões do app Flutter verificadas em 06/10/2026) + matriz de rastreabilidade critério -> evidência -> defensor | US-55 |
 | B | Slides de arquitetura e modelagem; revisão final de docs/04, 08, 09 | US-55, US-56 |
 | C | docs/07, 12, 13, 22 finais; roteiro da parte de concorrência/offline/geolocalização | US-55, US-56 |
 | D | docs/10, 11, 14, 23 finais; roteiro da demo (docs/18); vídeo de backup gravado dentro de 8h–20h | US-55, US-56, US-60 |
@@ -296,7 +301,7 @@ A linha do tempo completa da integração (eventos, responsáveis, planos B e as
 1. **O checkpoint manda.** Na semana anterior a um marco, só entram issues com a etiqueta do marco (`must-n1`, `must-n2`); qualquer outra volta ao backlog.
 2. **Regra de ouro:** nenhum item [REC] ou [OPC] começa enquanto houver bug aberto em item OBR (docs/14-backlog.md).
 3. **Gatilho de replanejamento:** se na sexta o entregável da semana não está no `main`, a segunda seguinte começa com 30 min de replanejamento; atraso > 1 semana em item OBR faz o suplente entrar na fatia e o [REC] do titular sair.
-4. **Folgas:** S6 (10 h) e S12 (8 h) absorvem feedback da N1 e dos usuários; são reserva intencional, não entram no planejamento de segunda-feira e não são usadas para features novas.
+4. **Folgas:** S6 (10 h) e S12 (8 h) absorvem feedback da N1 e dos usuários; são reserva intencional, não entram no planejamento de segunda-feira e não são usadas para features novas. Exceção registrada: em 06/10/2026 as 10 h da S6 foram alocadas à migração do app para Flutter (decisão do projeto), que não é feature nova.
 5. **Teto de horas:** o planejamento de segunda só fecha se a soma da coluna Est. da semana couber nas horas úteis declaradas em 16.2 e nenhum integrante passar de ~10 h (~8 h nas semanas com feriado); o que sobra volta ao backlog com a semana em branco.
 
 Ordem de corte (do primeiro ao último a cair):
@@ -304,13 +309,13 @@ Ordem de corte (do primeiro ao último a cair):
 | Ordem | O que cortar | Efeito |
 |---|---|---|
 | 1 | [OPC]: biometria, remarcar reserva, desativar conta, bloqueio pontual de horário | nenhum critério perdido |
-| 2 | [REC] Coil/`foto_url` | nenhum |
+| 2 | [REC] cached_network_image/`foto_url` | nenhum |
 | 3 | [REC] Pix em produção (fica sandbox) | nenhum; sandbox é API externa real |
 | 4 | [REC] webhook `POST /webhooks/inter/pix/{segredo}` (fica polling app + job) | nenhum; documentado em docs/11 |
 | 5 | [REC] notificação local RF24 (último REC a cair: ~40 linhas e é o segundo recurso nativo) | perde-se um argumento de demo, não o critério 5 (RF22 continua) |
 | 6 | Sandbox dentro do app (S7–S8): demo oficial em `simulado`, sandbox como evidência gravada de `curl`/Swagger | critério 4 ainda coberto por BrasilAPI CEP (RF09) |
 | 7 | Simplificar dentro do OBR-N2 sem remover: RF18 sem seletor de data (só "próximas"), RF15 sem aba Histórico separada (lista única com `ChipStatus`), RF16 como campo simples no DetalheReserva | critérios mantidos |
-| Nunca | RF01–RF03, RF06, RF07, RF11 (auth, 2 perfis, CRUD x2), RF12–RF14 e RN08 (409), RF19–RF21 (pagamento simulado), RF22 (recurso nativo), RF23 (Room + sync), testes CT-xx, README e commits dos 4 | são a evidência dos 7 critérios da disciplina |
+| Nunca | RF01–RF03, RF06, RF07, RF11 (auth, 2 perfis, CRUD x2), RF12–RF14 e RN08 (409), RF19–RF21 (pagamento simulado), RF22 (recurso nativo), RF23 (cache drift + sync), testes CT-xx, README e commits dos 4 | são a evidência dos 7 critérios da disciplina |
 
 ## 16.7 Rastreabilidade dos marcos
 

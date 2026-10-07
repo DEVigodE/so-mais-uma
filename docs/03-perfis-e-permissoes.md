@@ -6,10 +6,10 @@ Resumo: o app tem exatamente dois perfis de usuário, `CLIENTE` e `DONO` (enum `
 
 | Perfil | Quem é | O que faz no app | Tela inicial (bottom-nav) |
 |---|---|---|---|
-| **CLIENTE** | Quem quer jogar | Busca quadras (filtro por esporte e cidade, distância), vê a grade de slots por data, reserva, paga via Pix, acompanha e cancela as próprias reservas, edita o próprio perfil | `HomeCliente`: Quadras · Reservas · Perfil |
-| **DONO** | Dono ou gestor de quadra (o "administrador" do domínio, renomeado) | CRUD das próprias quadras, CRUD dos horários de funcionamento, vê e cancela reservas das próprias quadras, edita o próprio perfil | `HomeDono`: MinhasQuadras · Reservas · Perfil |
+| **CLIENTE** | Quem quer jogar | Busca quadras (filtro por esporte e cidade, distância), vê a grade de slots por data, reserva, paga via Pix, acompanha e cancela as próprias reservas, edita o próprio perfil | `/quadras` (shell CLIENTE): Quadras · Reservas · Perfil |
+| **DONO** | Dono ou gestor de quadra (o "administrador" do domínio, renomeado) | CRUD das próprias quadras, CRUD dos horários de funcionamento, vê e cancela reservas das próprias quadras, edita o próprio perfil | `/dono/quadras` (shell DONO): MinhasQuadras · Reservas · Perfil |
 
-Representação técnica: enum `PerfilUsuario { CLIENTE, DONO }` no backend (Java) e no app (Kotlin); coluna `usuario.perfil VARCHAR(10) NOT NULL CHECK (perfil IN ('CLIENTE','DONO'))`; claim `perfil` no JWT; chave `usuario_perfil` no `SessaoDataStore`.
+Representação técnica: enum `PerfilUsuario { CLIENTE, DONO }` no backend (Java) e no app (Dart, `lib/model/enums.dart`); coluna `usuario.perfil VARCHAR(10) NOT NULL CHECK (perfil IN ('CLIENTE','DONO'))`; claim `perfil` no JWT; chave `usuario_perfil` no `SessaoStore`.
 
 ## 2. Por que dois perfis e não três
 
@@ -27,7 +27,7 @@ Limitações conscientes: DONO não reserva (RN02) — se quiser jogar, cria uma
 1. Na tela `Cadastro`, o usuário marca um dos dois rádios: "Quero reservar quadras" (`CLIENTE`) ou "Quero anunciar minhas quadras" (`DONO`). O campo é obrigatório e validado na tela.
 2. O app envia `POST /api/v1/auth/registrar` com `RegistrarRequest(nome, email, senha, telefone?, perfil)`; o backend valida `@NotNull PerfilUsuario perfil` (RF01).
 3. `AuthService` grava `usuario.perfil` e devolve `TokenResponse{token, expiraEm, usuario}` (auto-login). O perfil **não muda** depois (RN20): não existe endpoint para alterá-lo e `PUT /usuarios/me` aceita apenas nome, telefone e senha (RF05).
-4. O app grava `usuario_perfil` no `SessaoDataStore`; `Splash` e `AppNavHost` escolhem o grafo de navegação e a bottom-nav pelo valor lido (`BottomNavCliente` ou `BottomNavDono`).
+4. O app grava `usuario_perfil` no `SessaoStore`; a partir da `Splash`, o `redirect` do `GoRouter` (montado pelo `AppRouter`) escolhe pelo valor lido o `StatefulShellRoute` do perfil e, com ele, a bottom-nav (`BottomNavCliente` ou `BottomNavDono`).
 5. Contas de demonstração vêm prontas no seed `scripts/seed-demo.sql` (seção 8).
 
 ## 4. Como o perfil é autorizado
@@ -99,7 +99,7 @@ private Quadra buscarDoDono(Long quadraId, Long donoId) {
 | Pagamento | mesma regra da reserva; nunca expõe dados do pagador | RN05 | 403 |
 | `GET /reservas` | CLIENTE recebe as suas; DONO recebe as das suas quadras (filtro no repositório, sem parâmetro de usuário na URL) | RN03, RN04 | 200 |
 
-No app, a mesma lógica aparece de forma preventiva: `AppNavHost` só registra as rotas do perfil logado, e os botões de escrita ficam desabilitados quando o perfil não tem a ação (por exemplo, DONO vê `Quadras` sem o botão de reservar). A verdade, porém, é sempre o 403 do servidor.
+No app, a mesma lógica aparece de forma preventiva: o `redirect` do `GoRouter` manda qualquer rota do outro perfil para a home do perfil logado, e os botões de escrita ficam desabilitados quando o perfil não tem a ação (por exemplo, DONO vê `Quadras` sem o botão de reservar). A verdade, porém, é sempre o 403 do servidor.
 
 ## 5. Matriz de permissões
 
@@ -169,16 +169,16 @@ Nesta tabela **C** = CLIENTE e **D** = DONO; a célula resume o que cada perfil 
 
 ```mermaid
 flowchart TD
-    S["Splash: lê usuario_perfil no DataStore"] --> L{perfil}
-    L -- CLIENTE --> HC["HomeCliente<br/>Quadras | Reservas | Perfil"]
+    S["Splash: lê usuario_perfil no SessaoStore"] --> L{perfil}
+    L -- CLIENTE --> HC["Shell CLIENTE /quadras<br/>Quadras | Reservas | Perfil"]
     HC --> Q["Quadras -> DetalheQuadra -> ConfirmarReserva -> Pagamento -> DetalheReserva"]
     HC --> R["MinhasReservas -> DetalheReserva -> Pagamento"]
-    L -- DONO --> HD["HomeDono<br/>MinhasQuadras | Reservas | Perfil"]
+    L -- DONO --> HD["Shell DONO /dono/quadras<br/>MinhasQuadras | Reservas | Perfil"]
     HD --> M["MinhasQuadras -> FormQuadra | HorariosQuadra | ReservasQuadra"]
     HD --> RQ["Reservas = ReservasQuadra (todas as quadras do dono)"]
 ```
 
-`AppNavHost` tem dois grafos aninhados; a bottom-nav inteira muda ao trocar de usuário. Sair (`Perfil`) limpa `SessaoDataStore` e as tabelas do Room e volta ao `Login` (RF03).
+O `AppRouter` (go_router) tem dois `StatefulShellRoute.indexedStack`, um por perfil; a bottom-nav inteira muda ao trocar de usuário. Sair (`Perfil`) executa `SessaoStore.limpar()` + `AppDatabase.limparTudo()` (tabelas do drift) e o `redirect` volta ao `Login` (RF03). Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter; perfis e regras de navegação não mudaram.
 
 ## 8. Evidência para o avaliador (menos de um minuto)
 

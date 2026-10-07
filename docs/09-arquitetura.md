@@ -1,17 +1,17 @@
 # 09 — Arquitetura da solução
 
-Arquitetura cliente-servidor em três partes: app Android nativo (Kotlin + Jetpack Compose, MVVM + Repository, cache Room e DataStore) que fala apenas com uma API REST Spring Boot 4.1 (JDK 21, camadas controller/service/repository) sobre PostgreSQL 18; o backend é o único que conversa com o Banco Inter (API Pix, mTLS + OAuth2) e com a BrasilAPI/ViaCEP. Documento coletivo: Integrante B escreve a justificativa das tecnologias e a modelagem, Integrante A escreve camadas, ambientes e CI.
+Arquitetura cliente-servidor em três partes: app Flutter para Android (Dart, MVVM + Repository, cache drift e `SessaoStore`) que fala apenas com uma API REST Spring Boot 4.1 (JDK 21, camadas controller/service/repository) sobre PostgreSQL 18; o backend é o único que conversa com o Banco Inter (API Pix, mTLS + OAuth2) e com a BrasilAPI/ViaCEP. Documento coletivo: Integrante B escreve a justificativa das tecnologias e a modelagem, Integrante A escreve camadas, ambientes e CI. Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter (equivalências na seção 4).
 
 ## 1. Visão geral
 
 ```mermaid
 flowchart LR
-    subgraph APP["Android — Kotlin + Jetpack Compose (app unico)"]
-        UI["ui/*: Screen + ViewModel + UiState"] --> REPO["data/repository/*Repository + Sincronizador"]
-        REPO --> API["data/remote/ApiService (Retrofit 3 + OkHttp)"]
-        REPO --> ROOM[("Room 3: quadra_cache, reserva_cache")]
-        REPO --> DS[("DataStore: SessaoDataStore")]
-        NAT["LocalizacaoProvider · NotificadorReserva · QrCodeGerador"] --> UI
+    subgraph APP["App Flutter (Dart) — alvo Android (frontend/)"]
+        UI["ui/*: Screen + ViewModel (ChangeNotifier) + UiState"] --> REPO["data/repository/*Repository + Sincronizador"]
+        REPO --> API["data/remote/ApiClient (dio)"]
+        REPO --> ROOM[("drift: quadra_cache, reserva_cache")]
+        REPO --> DS[("SessaoStore: secure storage + shared_preferences")]
+        NAT["LocalizacaoService · NotificadorReserva · PixQrCode"] --> UI
     end
 
     API -- "HTTPS · JSON · /api/v1 · Authorization: Bearer JWT" --> CTRL
@@ -36,11 +36,11 @@ Versão ASCII, para leitura sem renderizador:
 
 ```text
 +------------------------------+   HTTPS/JSON /api/v1, JWT Bearer   +----------------------------------+   JDBC + Flyway   +-----------------+
-| Android (Kotlin + Compose)   | ---------------------------------> | Backend Spring Boot 4.1 / JDK 21 | ----------------> | PostgreSQL 18   |
+| App Flutter (Dart, Android)  | ---------------------------------> | Backend Spring Boot 4.1 / JDK 21 | ----------------> | PostgreSQL 18   |
 | ui (Screen+ViewModel+UiState)| <--------------------------------- | security(JWT) -> controller      |                   | Docker local /  |
-|  -> repository -> ApiService |                                    |   -> service -> repository (JPA) |                   | Neon (beta)     |
-|  -> Room 3 cache | DataStore |                                    |   -> integracao/pix (PixGateway) |                   +-----------------+
-| FusedLocation | Notificacao  |                                    |   -> integracao/cep (CepClient)  |
+|  -> repository -> ApiClient  |                                    |   -> service -> repository (JPA) |                   | Neon (beta)     |
+|  -> drift | SessaoStore      |                                    |   -> integracao/pix (PixGateway) |                   +-----------------+
+| geolocator | notificacao     |                                    |   -> integracao/cep (CepClient)  |
 +------------------------------+                                    +-------+------------------+-------+
                                                                             | mTLS + OAuth2    | HTTPS
                                                                             v                  v
@@ -52,15 +52,15 @@ Versão ASCII, para leitura sem renderizador:
 
 Três regras estruturais que valem para todo o projeto:
 
-1. **O Android nunca fala com Inter nem com BrasilAPI.** Um só `baseUrl`, um só cliente HTTP, credenciais e certificados apenas no servidor (RNF02).
-2. **A verdade é o servidor.** O app tem cache de leitura (Room) e sessão (DataStore); toda escrita é online e o PostgreSQL decide conflitos (RNF11, RN08).
-3. **Tudo que depende de terceiro tem substituto interno:** `SimuladoPixGateway` para o Inter, ViaCEP para a BrasilAPI, `FakeApiService` para telas sem endpoint, kit de demo offline para o Render.
+1. **O app nunca fala com Inter nem com BrasilAPI.** Um só `baseUrl`, um só cliente HTTP, credenciais e certificados apenas no servidor (RNF02).
+2. **A verdade é o servidor.** O app tem cache de leitura (drift) e sessão (`SessaoStore`); toda escrita é online e o PostgreSQL decide conflitos (RNF11, RN08).
+3. **Tudo que depende de terceiro tem substituto interno:** `SimuladoPixGateway` para o Inter, ViaCEP para a BrasilAPI, `FakeApiClient` para telas sem endpoint, kit de demo offline para o Render.
 
 ### Responsabilidade de cada componente
 
 | Componente | Responsabilidade | Não faz |
 |---|---|---|
-| **App Android** | Telas (13), navegação por perfil, validação por campo, cache de leitura, sessão, geolocalização, notificação local, render do QR Pix | Regra de negócio de reserva/pagamento, cálculo de slots, acesso a APIs externas |
+| **App Flutter (Android)** | Telas (13), navegação por perfil, validação por campo, cache de leitura, sessão, geolocalização, notificação local, render do QR Pix | Regra de negócio de reserva/pagamento, cálculo de slots, acesso a APIs externas |
 | **API REST (Spring Boot)** | Autenticação JWT, autorização por perfil e propriedade, regras RN01–RN20, slots, exclusividade do slot, cobrança e confirmação Pix, expiração, proxy de CEP | Interface, envio de e-mail/push, estorno automático |
 | **PostgreSQL 18** | Persistência, integridade (FK, CHECK, índice único parcial `ux_reserva_slot_ativo`), fonte única de verdade | Lógica de aplicação (sem triggers/procedures) |
 | **Banco Inter — API Pix** | Emite a cobrança imediata (`PUT /pix/v2/cob/{txid}`), devolve `pixCopiaECola`, informa `CONCLUIDA` (`GET /pix/v2/cob/{txid}`) e, se cadastrado, envia webhook | — (externo; disponibilidade do sandbox 8h–20h seg–sex, ver docs/11-integracao-pix-inter.md) |
@@ -72,27 +72,28 @@ Três regras estruturais que valem para todo o projeto:
 
 ## 2. Justificativa das tecnologias
 
-Todas as versões foram verificadas em 01/09/2026 (tabela completa na seção 8). Critério de escolha: linha estável com suporte durante o semestre, um só JDK e um só sistema de build para os quatro integrantes, e a menor superfície de ferramentas que ainda atende os 7 critérios da disciplina.
+As versões do backend foram verificadas em 01/09/2026 e as do app em 06/10/2026, na troca para Flutter (tabela completa na seção 8). Critério de escolha: linha estável com suporte durante o semestre, um só JDK e um só sistema de build para os quatro integrantes, e a menor superfície de ferramentas que ainda atende os 7 critérios da disciplina.
 
 | Tecnologia (versão) | Papel | Por que | Alternativas descartadas |
 |---|---|---|---|
-| **Kotlin 2.4.10 + Jetpack Compose (BOM 2026.08.00, Material 3 1.4.0)** | UI do app | Decisão do grupo (Compose, não XML). Declarativo, menos arquivos por tela, estado explícito (`UiState`) que facilita testar ViewModel com fakes; Material 3 dá contraste e alvos de 48 dp de graça (RNF07) | XML + ViewBinding (mais boilerplate, sem ganho); Flutter/React Native (a disciplina pede Android nativo) |
+| **Flutter 3.47.6 + Dart 3.13.5 (widgets Material 3)** | App (UI e lógica do cliente), alvo Android | Decisão do projeto em 06/10/2026, substituindo Kotlin + Jetpack Compose (escolha até a N1). Declarativo como o Compose, mesma divisão `Screen`/`ViewModel`/`UiState`; hot reload acelera a iteração nas 13 telas; Material 3 dá contraste e alvos de 48 dp de graça (RNF07); ViewModels, widgets e DAOs testáveis com `flutter test` sem emulador; gerar iOS depois não exige reescrever o app | Kotlin + Compose (Android nativo, substituído em 06/10/2026); React Native (outra linguagem e outra cadeia de build, sem ganho para os critérios); Kotlin/Compose Multiplatform (mantém o toolchain Kotlin/Gradle do app) |
 | **Spring Boot 4.1.1 + JDK 21 LTS** | Backend REST | Linha 4.x é a única com suporte OSS ao longo do semestre (3.5 saiu de suporte em 06/2026). JDK 21 é LTS, roda Gradle, Android Studio e Spring com uma só instalação | Boot 3.5 (fora de suporte); JDK 25 (funciona, mas dobra o atrito de ferramentas); Node/NestJS (o grupo domina Java) |
 | **PostgreSQL 18.6** | Banco | Índice único parcial (`WHERE status IN (...)`) resolve a dupla reserva em uma linha de SQL; `TIMESTAMPTZ`, `NUMERIC`; gratuito na Neon; imagem `postgres:18-alpine` no Docker e no Testcontainers | MySQL (sem índice parcial); H2 (não reproduz o comportamento do índice); MongoDB (relacionamentos e unicidade condicional) |
 | **REST + JSON (`/api/v1`)** | Contrato app-servidor | Simples de documentar (Swagger), testar (`curl`, `.http`) e evoluir de forma aditiva (RNF09) | GraphQL/gRPC (sem ganho para 25 endpoints) |
-| **JWT HS256 via Nimbus (`spring-security-oauth2-jose`)** | Autenticação | Já vem com o `oauth2-resource-server`; `NimbusJwtEncoder/Decoder.withSecretKey`; compatível com Jackson 3 do Boot 4; stateless (RNF01, RNF03) | `jjwt` (risco `jjwt-jackson` x Jackson 3); sessão com cookie (não combina com app nativo); OAuth social (dependência externa) |
+| **JWT HS256 via Nimbus (`spring-security-oauth2-jose`)** | Autenticação | Já vem com o `oauth2-resource-server`; `NimbusJwtEncoder/Decoder.withSecretKey`; compatível com Jackson 3 do Boot 4; stateless (RNF01, RNF03) | `jjwt` (risco `jjwt-jackson` x Jackson 3); sessão com cookie (não combina com app mobile); OAuth social (dependência externa) |
 | **Spring Data JPA + Hibernate 7** | Persistência | Repositórios declarativos + `@Modifying` para os `UPDATE` condicionais; `ddl-auto=validate` confere as entidades contra o Flyway | JDBC puro (mais código); jOOQ (curva extra) |
 | **Flyway 12.4+ (`spring-boot-starter-flyway` + `flyway-database-postgresql`)** | Migrations | `V1__init.sql` versionado é a fonte única do DER; suporte a PostgreSQL 18 exige Flyway ≥ 12 | Liquibase (XML/YAML mais verboso); `ddl-auto=update` (imprevisível) |
 | **Testcontainers 2.x (`testcontainers-postgresql`) + `@ServiceConnection`** | Testes de integração | `ReservaConcorrenciaIT` roda contra um PostgreSQL 18 real, o único jeito de provar o índice parcial | H2 em modo PostgreSQL (não reproduz índice parcial); banco compartilhado (flaky) |
 | **springdoc-openapi 3.1.0** | Swagger UI | Contrato vivo em `/swagger-ui.html`; evidência do backend na N1 antes das telas de reserva | Postman como única documentação |
-| **Room 3.0.2 (`androidx.room3`, KSP)** | Cache local | Coroutines-first, DAOs `suspend`/`Flow`, `withWriteTransaction`; KSP obrigatório, alinhado com o resto do projeto | Room 2.8.4 (modo manutenção; não misturar); SQLDelight (mais uma linguagem de build) |
-| **DataStore Preferences 1.2.1** | Sessão e preferências | Assíncrono, seguro com coroutines; substitui `SharedPreferences`; `EncryptedSharedPreferences` está deprecado | Proto DataStore (schema extra sem necessidade) |
-| **Retrofit 3.0.0 + OkHttp 5.x + `converter-kotlinx-serialization` + kotlinx.serialization 1.11.0** | HTTP | Uma só biblioteca de serialização no app (a mesma das rotas tipadas do Navigation); interceptor único para o JWT; parsing de `ProblemDetail` centralizado | Ktor client (bom, mas menos material didático); Moshi/Gson (segunda serialização) |
-| **Navigation Compose 2.10.0 (rotas `@Serializable`)** | Navegação | Rotas tipadas em `Rotas.kt` eliminam strings mágicas; dois grafos aninhados por perfil | Navigation por strings; Voyager/Decompose (terceiros) |
-| **Injeção manual (`AppContainer` + `ViewModelFactory`)** | DI | Zero plugin Gradle/KSP extra, sem o bug conhecido Hilt 2.59 x AGP 9, ~60 linhas explicáveis em um slide; construtores já recebem dependências, então migrar para Hilt é local | Hilt 2.60.1 (risco de toolchain em 15 semanas); Koin (mais um framework para justificar) |
-| **ZXing core 3.5.4** | Gerar o QR Pix | `QRCodeWriter` -> `BitMatrix` -> `Bitmap`; sem câmera, sem Activity | `zxing-android-embedded` (scanner, sem manutenção); `qrcode-kotlin` (válida, mas ZXing é o padrão de mercado) |
-| **play-services-location 21.4.0** | Geolocalização (recurso nativo) | `FusedLocationProviderClient.getCurrentLocation` com uma permissão em runtime; cadeia de fallback até "sem distância" (RNF08) | `LocationManager` puro (mais código, pior precisão); Maps SDK (chave + billing) |
-| **Gradle Kotlin DSL (backend e Android) + `libs.versions.toml`** | Build | Uma ferramenta para os dois projetos; versões fixadas em catálogo (RNF10); Initializr gera Gradle | Maven no backend (duas ferramentas no mesmo repositório) |
+| **drift 2.35.1 + drift_flutter 0.3.1 (build_runner)** | Cache local | SQLite com tabelas tipadas, consultas observáveis (`.watch()` -> `Stream`), transações e DAOs (`@DriftAccessor`): o equivalente mais próximo do Room; testável em memória (`NativeDatabase.memory()`) no `flutter test` | sqflite (SQL cru, sem `Stream` reativo); Hive/Isar (NoSQL, sem PK composta nem transação com SQL) |
+| **flutter_secure_storage 11.2.0 + shared_preferences 2.5.6** | Sessão e preferências (`SessaoStore`) | Token JWT cifrado pelo Android Keystore; demais chaves (ids, nome, perfil, marcas de sincronização, flags) no `SharedPreferencesAsync`, assíncrono como o DataStore era | Só shared_preferences (token em texto claro); sessão dentro do drift (mistura o cache descartável com a única cópia da sessão) |
+| **dio 5.11.1 + json_serializable 6.14.1** | HTTP | Interceptor único para o JWT e para o 401 (`AuthInterceptor`), timeouts por requisição, corpo do erro já decodificado em `DioException.response` para o `ProblemDetailParser`; DTOs com `fromJson`/`toJson` gerados | `http` (sem interceptors, tudo à mão); retrofit para Dart (mais um gerador de código) |
+| **go_router 18.0.2** | Navegação | Pacote mantido pelo time do Flutter; caminhos centralizados na classe `Rotas` (sem strings soltas nas telas), `redirect` por sessão e perfil, `StatefulShellRoute` com uma pilha por aba nas duas bottom-navs | `Navigator.push` puro (sem redirect central nem deep link); auto_route (gerador de código) |
+| **`provider` 6.1.5+1 + `ChangeNotifier`** | DI e estado | Padrão do guia oficial de arquitetura do Flutter; `dependencias.dart` (~60 linhas, papel do antigo `AppContainer`) monta as dependências e cada rota cria seu ViewModel; zero geração de código; construtores recebem dependências, então os testes passam fakes direto | Riverpod (mais conceitos e geração de código); Bloc (eventos + estados por tela, mais arquivos); GetX (service locator global, difícil de testar e explicar) |
+| **qr_flutter 4.1.0** | Gerar o QR Pix | `QrImageView(data: pixCopiaECola)` desenha o QR como widget dentro de `PixQrCode`; sem câmera | pretty_qr_code (válida, menos usada); desenhar a matriz à mão |
+| **geolocator 14.1.1 + url_launcher 6.3.3** | Geolocalização (recurso nativo) e "Abrir no Maps" | Permissão em runtime, `getCurrentPosition` com timeout e `getLastKnownPosition`; no Android usa o Fused Location quando há Google Play Services e o `LocationManager` quando não há; cadeia de fallback até "sem distância" (RNF08); URI `geo:` abre qualquer app de mapas | location (API parecida, menos controle de precisão); google_maps_flutter (chave + billing) |
+| **flutter_local_notifications 22.3.1** | Notificação local (REC) | Canal `reservas`, permissão `POST_NOTIFICATIONS` do Android 13+ e payload que abre a reserva ao tocar | Push FCM (Firebase e servidor de mensagens; fora do MVP) |
+| **Maven Wrapper (backend) + `pubspec.yaml`/`pubspec.lock` (app)** | Build | Cada projeto com a ferramenta padrão do seu ecossistema; versões fixadas (RNF10); o Gradle do Android fica encapsulado pelo `flutter build` | Um sistema de build comum aos dois (não existe para Spring + Flutter sem atrito) |
 | **Render (Web Service Docker) + Neon (PostgreSQL)** | Hospedagem do beta | HTTPS automático (pré-requisito do webhook), deploy por push, grátis; Neon é PostgreSQL de verdade | VM + Caddy (horas de operação); só localhost (testes com usuários e webhook exigem URL pública); Railway/Fly (equivalentes, sem ganho) |
 | **GitHub Actions** | CI | Roda no monorepo com filtro por caminho; Docker disponível para Testcontainers | Sem CI (PR verde é regra do grupo, docs/21-git-e-organizacao.md) |
 
@@ -211,7 +212,7 @@ Regras adicionais: nenhuma chamada HTTP externa dentro de método `@Transactiona
 
 ```mermaid
 sequenceDiagram
-    participant App as Android (ConfirmarReservaViewModel)
+    participant App as App Flutter (ConfirmarReservaViewModel)
     participant Sec as SecurityConfig (JWT)
     participant C as ReservaController
     participant F as ReservaFacade
@@ -245,120 +246,200 @@ sequenceDiagram
     end
 ```
 
-## 4. Android — MVVM + Repository em módulo único
+## 4. App Flutter — MVVM + Repository em um único pacote
 
-Pacote raiz `br.com.somaisuma.app`, um único módulo `:app`. Três camadas: **UI** (Compose `Screen` sem estado próprio + `ViewModel` + `UiState`) -> **Repository** (decide entre rede, Room e DataStore) -> **fontes de dados** (`ApiService`, DAOs, `SessaoDataStore`, `LocalizacaoProvider`).
+Atualizado em 06/10/2026: o app passou de Android nativo (Kotlin + Jetpack Compose) para Flutter. A arquitetura não mudou — mesmas camadas, mesmas telas, mesmos nomes de componentes e regras —, só a tecnologia de cada peça (tabela de equivalências no fim desta seção).
 
-### Árvore de pacotes
+Pacote Dart `so_mais_uma` em `frontend/`, alvo Android (applicationId `br.com.somaisuma.app`). Três camadas, no desenho MVVM + Repository do guia oficial de arquitetura do Flutter (docs.flutter.dev/app-architecture): **UI** (`XxxScreen` sem estado próprio + `XxxViewModel` + `XxxUiState`) -> **Repository** (decide entre rede, drift e `SessaoStore`) -> **fontes de dados** (`ApiClient`, DAOs do drift, `SessaoStore`, `LocalizacaoService`).
+
+### Árvore de pastas
 
 ```text
-android/app/src/main/java/br/com/somaisuma/app/
-├── SoMaisUmaApp.kt                 Application: cria AppContainer, canal de notificação "reservas"
-├── MainActivity.kt                 ComponentActivity; setContent { SoMaisUmaTheme { AppNavHost(container) } }
-├── di/
-│   ├── AppContainer.kt             DI manual: OkHttp(AuthInterceptor) + Retrofit, AppDatabase, SessaoDataStore,
-│   │                               LocalizacaoProvider, MonitorConectividade, repositórios (lazy)
-│   └── ViewModelFactory.kt         factory genérica que recebe o container
-├── data/
-│   ├── remote/
-│   │   ├── ApiService.kt           interface Retrofit (todas as rotas de docs/10-api-rest.md)
-│   │   ├── dto/                    espelho em Kotlin (@Serializable) dos records do backend
-│   │   ├── AuthInterceptor.kt      adiciona Bearer; em 401 espia o corpo (peekBody 8 KB): se TOKEN_INVALIDO limpa sessão e emite SessaoExpirada (sem retry)
-│   │   ├── ProblemDetailParser.kt  corpo de erro -> ErroApi(status, codigo, subcodigo, detail, campos)
-│   │   └── FakeApiService.kt       dados fixos para telas sem endpoint e testes de ViewModel
-│   ├── local/
-│   │   ├── AppDatabase.kt          Room 3 (somaisuma.db, exportSchema = false, fallbackToDestructiveMigration)
-│   │   ├── QuadraDao.kt · QuadraEntity.kt · ReservaDao.kt · ReservaEntity.kt
-│   │   ├── SessaoDataStore.kt      token_jwt, token_expira_em, usuario_*, ultima_lat/lon, ultima_sincronizacao_*
-│   │   ├── LocalizacaoProvider.kt  FusedLocation -> lastLocation -> DataStore -> null
-│   │   └── MonitorConectividade.kt NetworkCallback -> Flow<Boolean>
-│   └── repository/
-│       ├── AuthRepository.kt · QuadraRepository.kt · ReservaRepository.kt · PagamentoRepository.kt · CepRepository.kt
-│       └── Sincronizador.kt        cache primeiro, rede depois, servidor vence (~30 linhas)
-├── model/
-│   ├── Quadra · HorarioFuncionamento · Reserva · Pagamento · Slot · Sessao · enums espelhados
-│   └── Resultado.kt                sealed: Ok<T> | Erro(ErroApi) | Offline
-├── ui/
-│   ├── navigation/Rotas.kt (@Serializable) · AppNavHost.kt · BottomNavCliente.kt · BottomNavDono.kt
-│   ├── theme/                      lightColorScheme + darkColorScheme explícitos; dynamic color desligado
-│   ├── components/                 PixQrCode · ChipStatus · BannerOffline · CampoTextoValidado · CarregandoBox · ErroBox · VazioBox
-│   ├── auth/                       SplashScreen · LoginScreen/ViewModel/UiState · CadastroScreen/ViewModel/UiState
-│   ├── quadras/                    QuadrasScreen · DetalheQuadraScreen (+ ViewModel/UiState)
-│   ├── reservas/                   ConfirmarReservaScreen · MinhasReservasScreen · DetalheReservaScreen
-│   ├── pagamento/                  PagamentoScreen · PagamentoViewModel (polling com backoff)
-│   ├── dono/                       MinhasQuadrasScreen · FormQuadraScreen · HorariosQuadraScreen · ReservasQuadraScreen
-│   └── perfil/                     PerfilScreen
-└── util/
-    ├── Geo.kt (Haversine) · Formatadores.kt (moeda, data no fuso) · Validadores.kt
-    ├── NotificadorReserva.kt       NotificationCompat, canal "reservas", POST_NOTIFICATIONS (API 33+)
-    └── QrCodeGerador.kt            ZXing core: String -> Bitmap
+frontend/
+├── pubspec.yaml · pubspec.lock · analysis_options.yaml (flutter_lints)
+├── config/
+│   ├── dev.json.exemplo            {"API_BASE_URL": "http://10.0.2.2:8080/api/v1", "DEV_KEY": "troque"}
+│   ├── dev.json                    (ignorado pelo Git)
+│   └── release.json                {"API_BASE_URL": "https://<app>.onrender.com/api/v1"}
+├── android/                        Gradle gerado pelo flutter create: applicationId, minSdk 26, sufixo .debug,
+│                                   desugaring (flutter_local_notifications), assinatura, manifests main/debug
+├── lib/
+│   ├── main.dart                   inicializa notificações, banco e sessão; runApp(MultiProvider(...))
+│   ├── app.dart                    SoMaisUmaApp: MaterialApp.router (tema claro/escuro, AppRouter)
+│   ├── config/
+│   │   ├── ambiente.dart           Ambiente.apiBaseUrl / Ambiente.devKey (String.fromEnvironment, --dart-define)
+│   │   └── dependencias.dart       lista de providers (DI): Dio(AuthInterceptor), ApiClient, AppDatabase, SessaoStore,
+│   │                               LocalizacaoService, MonitorConectividade, NotificadorReserva, repositórios
+│   ├── data/
+│   │   ├── remote/
+│   │   │   ├── api_client.dart     dio; um método por rota de docs/10-api-rest.md
+│   │   │   ├── dto/                *_dto.dart com @JsonSerializable (espelho dos records do backend)
+│   │   │   ├── auth_interceptor.dart   adiciona Bearer; em 401 lê o codigo já decodificado: se TOKEN_INVALIDO limpa a sessão (sem retry)
+│   │   │   ├── problem_detail_parser.dart  corpo de erro -> ErroApi(status, codigo, subcodigo, detail, campos)
+│   │   │   └── fake_api_client.dart    dados fixos para telas sem endpoint e testes de ViewModel
+│   │   ├── local/
+│   │   │   ├── app_database.dart   drift (somaisuma.sqlite, schemaVersion, recriação destrutiva no onUpgrade)
+│   │   │   ├── tabelas.dart        QuadraCache, ReservaCache
+│   │   │   ├── quadra_dao.dart · reserva_dao.dart
+│   │   │   ├── sessao_store.dart   token_jwt no flutter_secure_storage; usuario_*, ultima_lat/lon, ultima_sincronizacao_* no shared_preferences
+│   │   │   ├── localizacao_service.dart   geolocator: posição atual -> última conhecida -> SessaoStore -> null
+│   │   │   └── monitor_conectividade.dart connectivity_plus -> Stream<bool>
+│   │   └── repository/
+│   │       ├── auth_repository.dart · quadra_repository.dart · reserva_repository.dart
+│   │       ├── pagamento_repository.dart · cep_repository.dart
+│   │       └── sincronizador.dart  cache primeiro, rede depois, servidor vence (~30 linhas)
+│   ├── model/
+│   │   ├── quadra · horario_funcionamento · reserva · pagamento · slot · sessao · coordenada · enums espelhados
+│   │   ├── erro_api.dart
+│   │   └── resultado.dart          sealed class: Ok<T> | Erro<T>(ErroApi) | Offline<T>
+│   ├── ui/
+│   │   ├── navegacao/              rotas.dart (Rotas) · app_router.dart (AppRouter, go_router) · bottom_nav_cliente.dart · bottom_nav_dono.dart
+│   │   ├── tema/                   tema.dart: ThemeData claro e escuro com ColorScheme explícito (sem dynamic color)
+│   │   ├── componentes/            PixQrCode (qr_flutter) · ChipStatus · BannerOffline · CampoTextoValidado · CarregandoBox · ErroBox · VazioBox
+│   │   ├── auth/                   SplashScreen · Login{Screen,ViewModel,UiState} · Cadastro{Screen,ViewModel,UiState}
+│   │   ├── quadras/                QuadrasScreen · DetalheQuadraScreen (+ ViewModel/UiState)
+│   │   ├── reservas/               ConfirmarReservaScreen · MinhasReservasScreen · DetalheReservaScreen
+│   │   ├── pagamento/              PagamentoScreen · PagamentoViewModel (polling com backoff)
+│   │   ├── dono/                   MinhasQuadrasScreen · FormQuadraScreen · HorariosQuadraScreen · ReservasQuadraScreen
+│   │   └── perfil/                 PerfilScreen
+│   └── util/
+│       ├── geo.dart (Haversine) · formatadores.dart (intl: moeda, data em America/Sao_Paulo) · validadores.dart
+│       └── notificador_reserva.dart    flutter_local_notifications, canal "reservas", POST_NOTIFICATIONS (API 33+)
+├── test/                           espelha lib/: *_view_model_test.dart (FakeApiClient), *_dao_test.dart (drift em memória),
+│                                   sincronizador_test.dart, geo_test.dart, widget tests das Screens
+└── integration_test/               opcional (emulador), fora do CI
 ```
 
-### Padrão UiState + StateFlow
+Arquivos em `snake_case` (`quadras_view_model.dart` contém `QuadrasViewModel`); na árvore, `Login{Screen,ViewModel,UiState}` abrevia `login_screen.dart`, `login_view_model.dart` e `login_ui_state.dart`. Os `*.g.dart` gerados pelo `build_runner` (drift e json_serializable) não são versionados.
 
-Cada tela tem exatamente três arquivos: `XxxUiState` (data class imutável), `XxxViewModel` (expõe `StateFlow<XxxUiState>` e funções de ação) e `XxxScreen` (composable puro que recebe o estado e lambdas — testável em preview e sem ViewModel).
+### Padrão UiState + ChangeNotifier
 
-```kotlin
-data class QuadrasUiState(
-    val carregando: Boolean = true,
-    val quadras: List<Quadra> = emptyList(),
-    val esporteFiltro: TipoEsporte? = null,
-    val offline: Boolean = false,
-    val ultimaSincronizacao: Instant? = null,
-    val erro: ErroApi? = null,
-)
+Cada tela tem exatamente três arquivos: `xxx_ui_state.dart` (classe imutável com `copyWith`), `xxx_view_model.dart` (`ChangeNotifier` que expõe `state` e funções de ação) e `xxx_screen.dart` (`StatelessWidget` puro que recebe o estado e callbacks — testável em widget test sem ViewModel).
 
-class QuadrasViewModel(
-    private val quadraRepository: QuadraRepository,
-    private val localizacaoProvider: LocalizacaoProvider,
-) : ViewModel() {
-    private val _state = MutableStateFlow(QuadrasUiState())
-    val state: StateFlow<QuadrasUiState> = _state.asStateFlow()
+```dart
+class QuadrasUiState {
+  const QuadrasUiState({
+    this.carregando = true,
+    this.quadras = const [],
+    this.esporteFiltro,
+    this.offline = false,
+    this.ultimaSincronizacao,
+    this.erro,
+  });
 
-    init {
-        viewModelScope.launch {
-            quadraRepository.observarCatalogo()          // Flow do Room: instantâneo, também offline
-                .collect { lista -> _state.update { it.copy(carregando = false, quadras = lista) } }
-        }
-        sincronizar()
-    }
+  final bool carregando;
+  final List<Quadra> quadras;
+  final TipoEsporte? esporteFiltro;
+  final bool offline;
+  final DateTime? ultimaSincronizacao;
+  final ErroApi? erro;
 
-    fun sincronizar() = viewModelScope.launch {
-        when (val r = quadraRepository.sincronizarCatalogo()) {
-            is Resultado.Ok -> _state.update { it.copy(offline = false, erro = null) }
-            is Resultado.Offline -> _state.update { it.copy(offline = true) }
-            is Resultado.Erro -> _state.update { it.copy(erro = r.erro) }
-        }
-    }
+  // erro recebe uma função para permitir limpar o campo: copyWith(erro: () => null)
+  QuadrasUiState copyWith({bool? carregando, List<Quadra>? quadras, bool? offline, ErroApi? Function()? erro}) =>
+      QuadrasUiState(
+        carregando: carregando ?? this.carregando,
+        quadras: quadras ?? this.quadras,
+        esporteFiltro: esporteFiltro,
+        offline: offline ?? this.offline,
+        ultimaSincronizacao: ultimaSincronizacao,
+        erro: erro != null ? erro() : this.erro,
+      );
 }
 
-@Composable
-fun QuadrasScreen(state: QuadrasUiState, onAbrir: (Long) -> Unit, onFiltrar: (TipoEsporte?) -> Unit, onAtualizar: () -> Unit) { /* ... */ }
+class QuadrasViewModel extends ChangeNotifier {
+  QuadrasViewModel(this._quadraRepository, this._localizacao) {
+    _assinatura = _quadraRepository.observarCatalogo()      // Stream do drift: instantâneo, também offline
+        .listen((lista) => _emitir(_state.copyWith(carregando: false, quadras: lista)));
+    sincronizar();
+  }
+
+  final QuadraRepository _quadraRepository;
+  final LocalizacaoService _localizacao;
+  late final StreamSubscription<List<Quadra>> _assinatura;
+  var _descartado = false;
+
+  QuadrasUiState _state = const QuadrasUiState();
+  QuadrasUiState get state => _state;
+
+  void _emitir(QuadrasUiState novo) {
+    if (_descartado) return;                                // resposta chegou depois de sair da tela
+    _state = novo;
+    notifyListeners();
+  }
+
+  Future<void> sincronizar() async {
+    switch (await _quadraRepository.sincronizarCatalogo()) {
+      case Ok():
+        _emitir(_state.copyWith(offline: false, erro: () => null));
+      case Offline():
+        _emitir(_state.copyWith(offline: true));
+      case Erro(:final erro):
+        _emitir(_state.copyWith(erro: () => erro));
+    }
+  }
+
+  @override
+  void dispose() {
+    _descartado = true;
+    _assinatura.cancel();
+    super.dispose();
+  }
+}
+
+class QuadrasScreen extends StatelessWidget {
+  const QuadrasScreen({super.key, required this.state, required this.onAbrir, required this.onFiltrar, required this.onAtualizar});
+  final QuadrasUiState state;
+  final void Function(int id) onAbrir;
+  final void Function(TipoEsporte?) onFiltrar;
+  final Future<void> Function() onAtualizar;              // RefreshIndicator(onRefresh: onAtualizar, ...)
+
+  @override
+  Widget build(BuildContext context) { /* ... */ }
+}
 ```
 
-Regras: `Screen` não conhece ViewModel nem repositório; o `NavHost` faz `val vm: QuadrasViewModel = viewModel(factory = container.factory)` e passa `vm.state.collectAsStateWithLifecycle()`; toda tela renderiza os quatro estados carregando/vazio/erro/dados (RNF06) usando `CarregandoBox`, `VazioBox`, `ErroBox(onTentarNovamente)`; polling e coleta de `Flow` acontecem em `repeatOnLifecycle(STARTED)` para parar quando a tela sai.
+A rota liga as três peças; o `ChangeNotifierProvider` cria o ViewModel com as dependências do `MultiProvider` raiz e o descarta (`dispose`) quando a rota sai da pilha:
+
+```dart
+GoRoute(
+  path: Rotas.quadras,
+  builder: (context, _) => ChangeNotifierProvider(
+    create: (ctx) => QuadrasViewModel(ctx.read<QuadraRepository>(), ctx.read<LocalizacaoService>()),
+    child: Consumer<QuadrasViewModel>(                      // reconstrói a tela a cada notifyListeners()
+      builder: (context, vm, _) => QuadrasScreen(
+        state: vm.state,
+        onAbrir: (id) => context.push(Rotas.detalheQuadra(id)),
+        onFiltrar: vm.filtrar,
+        onAtualizar: vm.sincronizar,
+      ),
+    ),
+  ),
+),
+```
+
+Regras: `Screen` não conhece ViewModel nem repositório; toda tela renderiza os quatro estados carregando/vazio/erro/dados (RNF06) usando `CarregandoBox`, `VazioBox`, `ErroBox(onTentarNovamente)`; assinaturas de `Stream` e o `Timer` do polling vivem no ViewModel e são cancelados no `dispose()`; o polling pausa com o app em segundo plano e a sincronização "ao voltar" é disparada por um `AppLifecycleListener` no `State` da tela (`onResume`, `onHide`/`onShow`); `BuildContext` usado depois de `await` sempre passa por `if (!context.mounted) return;`. O Flutter não recria a Activity na rotação, então o estado sobrevive sem `rememberSaveable`; texto ainda não enviado fica nos `TextEditingController` do `State` do formulário.
 
 ### Fluxo de dados
 
 ```mermaid
 sequenceDiagram
-    participant S as Screen (Compose)
-    participant VM as ViewModel (StateFlow)
+    participant S as Screen (widget)
+    participant VM as ViewModel (ChangeNotifier)
     participant R as Repository
-    participant Room as Room 3
-    participant Api as ApiService
+    participant DB as drift
+    participant Api as ApiClient (dio)
 
     Note over S,Api: Leitura (RF07, RF15, RF23): cache primeiro, rede depois, servidor vence
-    S->>VM: collectAsStateWithLifecycle()
+    S->>VM: Consumer escuta notifyListeners()
     VM->>R: observarCatalogo()
-    R->>Room: quadraDao.observarPorEscopo(CATALOGO)
-    Room-->>VM: Flow<List<Quadra>> (instantâneo)
+    R->>DB: quadraDao.observarPorEscopo(CATALOGO).watch()
+    DB-->>VM: Stream<List<Quadra>> (instantâneo)
     VM->>R: sincronizarCatalogo()
     R->>Api: GET /quadras
     alt 200
-        R->>Room: substituirEscopo(CATALOGO, lista) em withWriteTransaction
-        Room-->>VM: Flow emite a lista nova
-    else IOException
+        R->>DB: substituirEscopo(CATALOGO, lista) em transaction
+        DB-->>VM: Stream emite a lista nova
+    else DioException de conexão/timeout
         R-->>VM: Resultado.Offline -> BannerOffline
     end
 
@@ -367,22 +448,56 @@ sequenceDiagram
     VM->>R: criarReserva(quadraId, inicio)
     R->>Api: POST /reservas
     alt 201
-        R->>Room: reservaDao.upsert(ReservaEntity com pixCopiaECola, expiraEm)
-        R-->>VM: Resultado.Ok(reserva) -> navega para Pagamento
+        R->>DB: reservaDao.upsert(linha com pixCopiaECola, expiraEm)
+        R-->>VM: Resultado.Ok(reserva) -> context.go(Rotas.pagamento(id))
     else 409 / 422 / 502
         R-->>VM: Resultado.Erro(codigo) -> snackbar e recarrega slots
     end
 ```
 
-Em texto: a UI observa o Room e por isso abre instantaneamente e funciona em modo avião; cada abertura de tela, pull-to-refresh, `ON_RESUME` e volta da rede dispara `Sincronizador.sincronizar()`, que substitui o escopo inteiro pela resposta do servidor. Escritas vão direto à API; o sucesso é gravado no cache e a lista é re-sincronizada. Não existe fila offline (RNF11). Detalhes em docs/12-persistencia-local.md.
+Em texto: a UI observa o drift e por isso abre instantaneamente e funciona em modo avião; cada abertura de tela, pull-to-refresh (`RefreshIndicator`), volta do segundo plano (`AppLifecycleListener.onResume`) e volta da rede (`MonitorConectividade`) dispara `Sincronizador.sincronizar()`, que substitui o escopo inteiro pela resposta do servidor. Escritas vão direto à API; o sucesso é gravado no cache e a lista é re-sincronizada. Não existe fila offline nem tarefa em segundo plano (RNF11). Detalhes em docs/12-persistencia-local.md.
 
-### Por que sem Clean Architecture e sem Hilt
+### Navegação
 
-| Descartado | O que custaria | Por que MVVM + Repository + DI manual basta |
+`AppRouter` (`lib/ui/navegacao/app_router.dart`) monta um `GoRouter` com `refreshListenable: sessaoStore` e um `redirect` que manda quem está sem sessão (ou com token a menos de 5 min de expirar) para `/login`, CLIENTE para `/quadras` e DONO para `/dono/quadras`. Cada perfil tem um `StatefulShellRoute.indexedStack` com três ramos (uma pilha por aba, estado preservado) e sua `NavigationBar` (`BottomNavCliente`, `BottomNavDono`); telas de detalhe abrem no navigator raiz, sem bottom-nav. Os caminhos ficam centralizados na classe `Rotas` (`lib/ui/navegacao/rotas.dart`), sem strings soltas nas telas. Como o `SessaoStore` é um `ChangeNotifier`, limpar a sessão (Sair ou 401 `TOKEN_INVALIDO`) já leva ao Login pelo `redirect`, sem evento extra. Grafo completo, caminhos e regras de pilha em docs/04-telas.md.
+
+### Por que sem Clean Architecture e sem Riverpod/Bloc
+
+| Descartado | O que custaria | Por que MVVM + Repository + `provider` basta |
 |---|---|---|
-| Camada `domain` com use cases e modelos próprios | Um `UseCase` por ação (~25 classes) + mapeadores entity/domain/dto em cada sentido; módulos Gradle por camada | O critério pede "camadas" e "boas práticas": UI -> ViewModel -> Repository -> fonte de dados já são camadas com dependência em um sentido só. O `Repository` é o único lugar que decide entre Room e rede. Com 13 telas e 4 pessoas aprendendo Compose, dobrar o número de arquivos reduz a chance de entregar |
-| Hilt/Dagger | Plugin Gradle + KSP + anotações em Application, Activity e ViewModels; Hilt 2.59 teve bug com AGP 9; documentação do KSP ainda marcada como alpha | `AppContainer` (~60 linhas) cria as dependências com `lazy` e `ViewModelFactory` injeta nos ViewModels por construtor. É explicável em um slide e o build nunca quebra por DI. Como os construtores já recebem dependências, migrar para Hilt depois é trocar o container por anotações, sem mexer nas telas |
-| Multi-módulo (`:core`, `:data`, `:feature-*`) | Configuração de Gradle por módulo, tempo de build | Um módulo `:app` compila em segundos; separação lógica por pacote é suficiente para a banca ler |
+| Camada `domain` com use cases e modelos próprios | Um `UseCase` por ação (~25 classes) + mapeadores entre DTO, linha do drift e modelo em cada sentido; pacotes Dart por camada | O critério pede "camadas" e "boas práticas": UI -> ViewModel -> Repository -> fonte de dados já são camadas com dependência em um sentido só. O `Repository` é o único lugar que decide entre drift e rede. Com 13 telas, 4 pessoas aprendendo Flutter e a troca de tecnologia na S6, dobrar o número de arquivos reduz a chance de entregar |
+| Riverpod, Bloc/Cubit, GetX | Mais um modelo mental (providers globais com geração de código, eventos e estados, ou service locator com "mágica"), mais material para a banca perguntar | `ChangeNotifier` é do próprio Flutter e o pacote `provider` só o distribui pela árvore; é o desenho do guia oficial. `dependencias.dart` (~60 linhas) faz o papel do antigo `AppContainer`, os ViewModels recebem dependências por construtor e os testes passam fakes direto, sem framework |
+| Multi-pacote (`packages/core`, `packages/data`, melos) | Um `pubspec.yaml` por pacote, versionamento interno, tempo de configuração | Um pacote compila e roda os testes em segundos; separação lógica por pasta é suficiente para a banca ler |
+
+### Equivalências Android nativo -> Flutter (decisão de 06/10/2026)
+
+Referência para quem leu os documentos até a N1 ou o histórico do board: cada peça do desenho original e o que a substitui.
+
+| Peça | Até 06/10/2026 (Android nativo) | Agora (Flutter) |
+|---|---|---|
+| Linguagem e UI | Kotlin 2.4.10 + Jetpack Compose (BOM 2026.08.00, Material 3) | Dart 3.13.5 + Flutter 3.47.6 (widgets Material 3) |
+| Pasta do app | `android/` | `frontend/` (o Gradle do Android fica em `frontend/android/`, gerado pelo `flutter create`) |
+| Tela | `@Composable XxxScreen` | `XxxScreen extends StatelessWidget` |
+| Estado da tela | `ViewModel` + `StateFlow<XxxUiState>` + `collectAsStateWithLifecycle()` | `ChangeNotifier` + `XxxUiState` + `Consumer`/`ListenableBuilder` |
+| Ciclo de vida | `repeatOnLifecycle(STARTED)`, `LifecycleResumeEffect` | `AppLifecycleListener` (`onResume`, `onHide`/`onShow`) + `dispose()` do ViewModel |
+| Navegação | Navigation Compose 2.10, `Rotas.kt` (`@Serializable`), `AppNavHost` com 2 grafos | go_router 18.0.2, `Rotas` (caminhos), `AppRouter` com 2 `StatefulShellRoute` |
+| Injeção de dependência | `AppContainer` + `ViewModelFactory` manuais | `provider` 6.1.5+1: `dependencias.dart` + `ChangeNotifierProvider` por rota |
+| HTTP | Retrofit 3 + OkHttp 5 (`ApiService`, `AuthInterceptor` com `peekBody`) | dio 5.11.1 (`ApiClient`, `AuthInterceptor` lendo `err.response?.data`) |
+| Serialização | kotlinx.serialization 1.11 (`ignoreUnknownKeys`) | json_serializable 6.14.1 (ignora chaves desconhecidas por padrão; `unknownEnumValue`) |
+| Cache local | Room 3.0.2 (KSP), `QuadraEntity`/`ReservaEntity`, `fallbackToDestructiveMigration` | drift 2.35.1 (build_runner), tabelas `QuadraCache`/`ReservaCache`, recriação destrutiva no `onUpgrade` |
+| Sessão | DataStore Preferences 1.2.1 (`SessaoDataStore`, token em texto claro no sandbox do app) | `SessaoStore`: flutter_secure_storage 11.2.0 (token no Android Keystore) + shared_preferences 2.5.6 |
+| Conectividade | `ConnectivityManager.NetworkCallback` | connectivity_plus 7.3.2 |
+| Geolocalização | play-services-location 21.4.0 (`LocalizacaoProvider`) | geolocator 14.1.1 (`LocalizacaoService`; usa o Fused Location quando há Google Play Services e o `LocationManager` quando não há) |
+| Abrir no mapa | Intent `geo:` | url_launcher 6.3.3 com URI `geo:` |
+| Notificação local | `NotificationCompat` + canal em `SoMaisUmaApp.onCreate` | flutter_local_notifications 22.3.1, canal criado em `NotificadorReserva.inicializar()` no `main()` |
+| QR Code | ZXing core 3.5.4 (`QrCodeGerador` -> `Bitmap`) | qr_flutter 4.1.0 (`QrImageView` dentro de `PixQrCode`) |
+| Imagens (REC) | Coil 3.6.1 | cached_network_image 4.0.4 |
+| Biometria (OPC) | androidx.biometric 1.1.0 + `FragmentActivity` | local_auth 3.0.2 + `FlutterFragmentActivity` |
+| Configuração por build | `BuildConfig` + `local.properties` | `--dart-define-from-file` (`config/dev.json`, `config/release.json`) + `Ambiente` |
+| Testes | JUnit na JVM + `androidTest` (Room em emulador) | `flutter test` (ViewModel, widget e DAO drift com `NativeDatabase.memory()`, sem emulador) + `integration_test` opcional |
+| Build e versões | Gradle 9.7.1 + AGP 9.4 + `libs.versions.toml`, KSP | `flutter`/pub + `pubspec.yaml` + `pubspec.lock`, `build_runner` |
+
+O que não mudou: plataforma Android e APK via `adb`, minSdk 26, permissões, emulador em `10.0.2.2`, nomes de telas e componentes, `Sincronizador`, `Resultado`, `ErroApi`, chaves da sessão, tabelas `quadra_cache`/`reserva_cache`, regra "cache primeiro, rede depois, servidor vence" e escritas somente online.
 
 ## 5. Tratamento de erros ponta a ponta
 
@@ -422,7 +537,7 @@ Um único formato de erro na API, um único parser no app, um único tipo de ret
 |---|---|---|---|
 | `MethodArgumentNotValidException` (Bean Validation) | 400 | `VALIDACAO` + `campos[]` | Mostra a mensagem ao lado de cada campo (`CampoTextoValidado`) |
 | `AuthService` credencial errada | 401 | `CREDENCIAL_INVALIDA` | Mensagem na tela de Login; não derruba sessão |
-| Filtro JWT (token ausente, expirado, assinatura inválida) | 401 | `TOKEN_INVALIDO` | `AuthInterceptor` limpa DataStore e Room e emite `SessaoExpirada` uma vez -> Login (sem retry, sem loop) |
+| Filtro JWT (token ausente, expirado, assinatura inválida) | 401 | `TOKEN_INVALIDO` | `AuthInterceptor` limpa `SessaoStore` e drift uma única vez; o `redirect` do `GoRouter` leva ao Login (sem retry, sem loop) |
 | `LoginTentativasService` | 429 | `LOGIN_BLOQUEADO` | "Muitas tentativas. Tente em 15 minutos." |
 | `AcessoNegadoException` | 403 | `ACESSO_NEGADO` | Snackbar e volta |
 | `NaoEncontradoException` | 404 | `NAO_ENCONTRADO` | `ErroBox` com "Tentar novamente" ou volta |
@@ -435,43 +550,73 @@ Um único formato de erro na API, um único parser no app, um único tipo de ret
 
 ### No app: `Resultado` selado
 
-```kotlin
-sealed interface Resultado<out T> {
-    data class Ok<T>(val valor: T) : Resultado<T>
-    data class Erro(val erro: ErroApi) : Resultado<Nothing>      // ErroApi(status, codigo, subcodigo?, detail, campos)
-    data object Offline : Resultado<Nothing>                     // IOException / sem rede
+```dart
+sealed class Resultado<T> {
+  const Resultado();
 }
 
-suspend fun <T> chamarApi(bloco: suspend () -> T): Resultado<T> = try {
-    Resultado.Ok(bloco())
-} catch (e: HttpException) {
-    Resultado.Erro(ProblemDetailParser.parse(e))
-} catch (e: IOException) {
-    Resultado.Offline
+final class Ok<T> extends Resultado<T> {
+  const Ok(this.valor);
+  final T valor;
 }
+
+final class Erro<T> extends Resultado<T> {
+  const Erro(this.erro);
+  final ErroApi erro;                       // ErroApi(status, codigo, subcodigo?, detail, campos)
+}
+
+final class Offline<T> extends Resultado<T> {
+  const Offline();                          // sem rede / servidor inacessível
+}
+
+// lib/data/repository/sincronizador.dart — única tradução de DioException para Resultado,
+// usada nas sincronizações e nas escritas de todos os repositórios (uso em docs/12-persistencia-local.md)
+static Resultado<T> falha<T>(DioException e) => switch (e.type) {
+      DioExceptionType.connectionError ||
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => Offline<T>(),
+      DioExceptionType.badResponse => Erro<T>(ProblemDetailParser.parse(e)),
+      _ => throw e,                         // cancelamento, certificado: bug, não rede
+    };
 ```
 
-### `AuthInterceptor`: leitura por espiada, nunca consumindo o corpo
+Quem consome trata os três casos com `switch` exaustivo do Dart 3: esquecer um caso é erro de compilação, não bug em produção.
 
-O interceptor precisa do `codigo` do `ProblemDetail` para separar `TOKEN_INVALIDO` (sessão expirada -> derruba a sessão) de `CREDENCIAL_INVALIDA` (erro de tela). Ler `response.body.string()` esgotaria o fluxo de dados uma única vez e a camada de cima receberia corpo vazio, perdendo `codigo`, `subcodigo`, `campos[]` e o id da reserva de que a navegação depende. A leitura é por espiada: `peekBody` copia no máximo 8 KB para um buffer novo e deixa o corpo original intacto para o Retrofit e o `ProblemDetailParser`.
+### `AuthInterceptor`: o corpo do erro chega inteiro ao repositório
 
-```kotlin
-class AuthInterceptor(private val sessao: SessaoDataStore, /* ... */) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val requisicao = chain.request().novaComBearer(sessao.tokenAtualBloqueante())
-        val resposta = chain.proceed(requisicao)
-        if (resposta.code == 401 && !requisicao.ehRotaDeAuth()) {
-            val copia = resposta.peekBody(8_192).string()      // espia até 8 KB; NÃO consome o corpo
-            if (ProblemDetailParser.codigoDe(copia) == "TOKEN_INVALIDO") {
-                derrubarSessaoUmaVez()                          // limpar() + clearAllTables() + SessaoExpirada
-            }
-        }
-        return resposta                                        // corpo íntegro segue para o Retrofit
+O interceptor precisa do `codigo` do `ProblemDetail` para separar `TOKEN_INVALIDO` (sessão expirada -> derruba a sessão) de `CREDENCIAL_INVALIDA` (erro de tela). No desenho Android original isso exigia ler o corpo por espiada (`peekBody`) para não esgotá-lo antes do Retrofit. No dio esse risco não existe: o corpo já foi lido e decodificado quando o `onError` roda, fica em `err.response?.data` e segue intacto para o repositório e o `ProblemDetailParser`, com `codigo`, `subcodigo`, `campos[]` e o id da reserva de que a navegação depende. O token também é lido de forma assíncrona no `onRequest`, sem bloquear a thread de UI.
+
+```dart
+class AuthInterceptor extends Interceptor {
+  AuthInterceptor(this._sessao, this._db);
+  final SessaoStore _sessao;
+  final AppDatabase _db;
+  var _derrubada = false;                               // rearmada pelo AuthRepository no próximo login
+
+  @override
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    final token = await _sessao.tokenAtual();           // flutter_secure_storage
+    if (token != null) options.headers['Authorization'] = 'Bearer $token';
+    handler.next(options);
+  }
+
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    final resposta = err.response;
+    final rotaDeAuth = err.requestOptions.path.startsWith('/auth/');
+    if (resposta?.statusCode == 401 && !rotaDeAuth && !_derrubada &&
+        ProblemDetailParser.codigoDe(resposta!.data) == 'TOKEN_INVALIDO') {
+      _derrubada = true;
+      await _db.limparTudo();
+      await _sessao.limpar();                           // notifyListeners -> redirect do GoRouter -> /login
     }
+    handler.next(err);                                  // sem retry; o erro segue íntegro para o repositório
+  }
 }
 ```
 
-O caminho completo é: exceção de domínio no `service` -> `GlobalExceptionHandler` -> JSON `ProblemDetail` -> `HttpException` no Retrofit -> `ProblemDetailParser` -> `Resultado.Erro(ErroApi)` no `Repository` -> `UiState.erro` no ViewModel -> `ErroBox`/snackbar/mensagem de campo na `Screen`. Nenhuma camada intermediária traduz mensagens: o `detail` já vem em português pronto para exibir (RNF06), e o `codigo` permite comportamento específico sem comparar strings de texto.
+O caminho completo é: exceção de domínio no `service` -> `GlobalExceptionHandler` -> JSON `ProblemDetail` -> `DioException` (`badResponse`) no dio -> `ProblemDetailParser` -> `Resultado.Erro(ErroApi)` no `Repository` -> `UiState.erro` no ViewModel -> `ErroBox`/snackbar/mensagem de campo na `Screen`. Nenhuma camada intermediária traduz mensagens: o `detail` já vem em português pronto para exibir (RNF06), e o `codigo` permite comportamento específico sem comparar strings de texto.
 
 ## 6. Ambientes, hospedagem e configuração
 
@@ -479,9 +624,9 @@ O caminho completo é: exceção de domínio no `service` -> `GlobalExceptionHan
 
 | Ambiente | Quando | Backend | Banco | Pix | App aponta para |
 |---|---|---|---|---|---|
-| **Dev local** | S1–S8 e sempre | `docker compose up -d` (PostgreSQL) + `./mvnw spring-boot:run` (profile `simulado`) | `postgres:18-alpine` local, recriável com `docker compose down -v` | `SimuladoPixGateway`; quem tem `.crt/.key` do sandbox roda `inter-sandbox` | Emulador: `http://10.0.2.2:8080`; celular físico via USB: IP da LAN (cleartext liberado só no build `debug` via `network_security_config`); Wi-Fi da faculdade bloqueando: hotspot |
+| **Dev local** | S1–S8 e sempre | `docker compose up -d` (PostgreSQL) + `./mvnw spring-boot:run` (profile `simulado`) | `postgres:18-alpine` local, recriável com `docker compose down -v` | `SimuladoPixGateway`; quem tem `.crt/.key` do sandbox roda `inter-sandbox` | Emulador: `http://10.0.2.2:8080` (`config/dev.json`); celular físico via USB: IP da LAN (cleartext liberado só no build debug, em `src/debug/AndroidManifest.xml`); Wi-Fi da faculdade bloqueando: hotspot |
 | **Webhook em dev** | teste em S8 | `ngrok http 8080` ou `cloudflared` | local | `inter-sandbox` | — |
-| **Beta / testes com usuários / CP2 / N2** | deploy em S9 (26–30/10) | **Render** Web Service Docker, HTTPS automático, deploy por push na `main` | **Neon** PostgreSQL gratuito | `SPRING_PROFILES_ACTIVE=inter-sandbox` (`.crt/.key` como Secret Files); `simulado` se o sandbox falhar | APK release: `BuildConfig.API_BASE_URL = https://<app>.onrender.com/api/v1` |
+| **Beta / testes com usuários / CP2 / N2** | deploy em S9 (26–30/10) | **Render** Web Service Docker, HTTPS automático, deploy por push na `main` | **Neon** PostgreSQL gratuito | `SPRING_PROFILES_ACTIVE=inter-sandbox` (`.crt/.key` como Secret Files); `simulado` se o sandbox falhar | APK release: `config/release.json` com `API_BASE_URL = https://<app>.onrender.com/api/v1` |
 | **Semana de testes com usuários** | 09 a 13/11 | Render, com `SPRING_PROFILES_ACTIVE=simulado` durante toda a semana | Neon | `SimuladoPixGateway` | D devolve para `inter-sandbox` na seg 16/11 |
 | **Kit de demo offline** (plano B único, ensaiado em S12/S13) | apresentação | `docker compose up` com PostgreSQL + jar do backend (profile `simulado`) no notebook do apresentador | local | simulado | APK debug apontando para o IP do notebook no hotspot do celular |
 | **Produção Inter** | só se go/no-go de 16/10 for positivo (REC) | Render, profile `inter-prod` | Neon | `InterPixGateway` produção, chave `INTER_CHAVE_PIX` da conta PJ | idem beta |
@@ -520,7 +665,7 @@ A troca de profile não exige rebuild: é a variável `SPRING_PROFILES_ACTIVE`. 
 | `INTER_ESCOPOS` | opcional | `cob.write cob.read pix.read pix.write webhook.write webhook.read` | Escopo pedido ao token |
 | `PORT` | Render | injetado pela plataforma | `server.port=${PORT:8080}` |
 
-`.gitignore` desde o primeiro commit: `*.crt`, `*.key`, `*.pfx`, `.env`, `local.properties`, `*.jks`. Cada integrante mantém um `.env` local lido pelo `bootRun` via `spring.config.import=optional:file:.env[.properties]`. Atenção: esse arquivo é lido como **arquivo de propriedades**, não é interpretado por um shell — `$HOME` e `~` ficam literais (o certificado não é encontrado) e a conversão automática de nome (relaxed binding) de `MAIUSCULAS_COM_SUBLINHADO` só vale para variáveis de ambiente de verdade. Por isso, dentro do `.env`, caminhos são absolutos e as propriedades do Spring vão na forma canônica com pontos e minúsculas (`spring.profiles.active`, `spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password`); a forma `SPRING_DATASOURCE_URL` serve para `export` no shell e para o painel do Render. Exemplo pronto em `backend/.env.exemplo` (ver `README.md`). No Android, `API_BASE_URL` é `buildConfigField` por build type (`debug` = IP local ou `10.0.2.2`; `release` = URL do Render) — nenhum segredo no APK. O build `debug` usa `applicationIdSuffix ".debug"` (pacote `br.com.somaisuma.app.debug`), para o APK debug conviver com o release no mesmo celular durante os testes com usuários; `BuildConfig.DEV_KEY` também é `buildConfigField`, lido de `DEV_KEY=` em `android/local.properties` (ignorado pelo Git) e usado só no botão "Simular pagamento" do build debug.
+`.gitignore` desde o primeiro commit: `*.crt`, `*.key`, `*.pfx`, `.env`, `*.jks`; no app, também `frontend/config/dev.json`, `frontend/android/key.properties` e os `*.g.dart` gerados (o `.gitignore` criado pelo `flutter create` já cobre `build/`, `.dart_tool/` e `local.properties`). Cada integrante mantém um `.env` local lido pelo `bootRun` via `spring.config.import=optional:file:.env[.properties]`. Atenção: esse arquivo é lido como **arquivo de propriedades**, não é interpretado por um shell — `$HOME` e `~` ficam literais (o certificado não é encontrado) e a conversão automática de nome (relaxed binding) de `MAIUSCULAS_COM_SUBLINHADO` só vale para variáveis de ambiente de verdade. Por isso, dentro do `.env`, caminhos são absolutos e as propriedades do Spring vão na forma canônica com pontos e minúsculas (`spring.profiles.active`, `spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password`); a forma `SPRING_DATASOURCE_URL` serve para `export` no shell e para o painel do Render. Exemplo pronto em `backend/.env.exemplo` (ver `README.md`). No app, `API_BASE_URL` e `DEV_KEY` entram por `--dart-define-from-file` (`config/dev.json` no debug, com IP local ou `10.0.2.2`; `config/release.json` no release, com a URL do Render) e são lidos em `Ambiente` com `String.fromEnvironment` — nenhum segredo de servidor no APK. O build debug usa `applicationIdSuffix ".debug"` em `frontend/android/app/build.gradle.kts` (pacote `br.com.somaisuma.app.debug`), para o APK debug conviver com o release no mesmo celular durante os testes com usuários; `DEV_KEY` só existe no `config/dev.json` (ignorado pelo Git) e é usada apenas no botão "Simular pagamento", que só aparece com `kDebugMode`.
 
 ### Integração contínua (GitHub Actions)
 
@@ -530,7 +675,7 @@ Um único workflow, `.github/workflows/ci.yml`, disparado em `pull_request` e em
 |---|---|---|
 | `segredos` | `actions/checkout` -> varredura de `git ls-files` que falha o build se houver `.env` (exceto `.env.exemplo`), `*.key`, `*.crt`, `*.pem`, `*.pfx`, `*.p12`, `*.jks` versionados | < 1 min |
 | `backend` | `actions/setup-java` (Temurin 25, cache Maven) -> `./mvnw -B verify` (compila, unitários, `@WebMvcTest` e `ReservaConcorrenciaIT` via Testcontainers, Docker já disponível no runner Ubuntu, e gera o jar) | < 6 min |
-| `android` | `setup-java` 21 + `setup-gradle` -> `./gradlew testDebugUnitTest assembleDebug` (ViewModels com fakes e APK debug como artifact) | < 8 min |
+| `frontend` | `setup-java` 21 + `subosito/flutter-action` (Flutter 3.47.6, com cache) -> `flutter pub get` -> `dart run build_runner build --delete-conflicting-outputs` -> `flutter analyze` -> `flutter test` (ViewModels com fakes, widgets, DAO drift em memória) -> `flutter build apk --debug` (APK como artifact); só avisa e passa enquanto `frontend/pubspec.yaml` não existir | < 8 min |
 
 Regras: `main` protegida, PR só mergeia com CI verde e uma aprovação do suplente (docs/21-git-e-organizacao.md); deploy no Render é automático por push na `main` a partir de S9; o `ReservaConcorrenciaIT` roda em todo PR do backend porque é a evidência de RN08.
 
@@ -538,22 +683,23 @@ Regras: `main` protegida, PR só mergeia com CI verde e uma aprovação do suple
 
 | Decisão | Alternativas | Motivo resumido |
 |---|---|---|
+| App em Flutter (06/10/2026) | Android nativo (Kotlin + Compose, vigente até a N1); React Native | decisão do projeto; mesma arquitetura e mesmos nomes, hot reload, testes de ViewModel/widget/DAO sem emulador |
 | Monolito em um jar + um PostgreSQL | microsserviços, filas, gateway | 25 endpoints, 4 pessoas, 15 semanas |
 | Pacotes por camada no backend | package-by-feature | mapeia o critério 2; conflitos evitados por arquivo por domínio |
 | Cobrança Pix fora da transação da reserva (`ReservaFacade`) | dentro, com rollback | não segurar o lock do índice durante uma chamada HTTP |
 | Polling (app 5 s com backoff para 10 s + job 60 s) obrigatório; webhook recomendado | só webhook | sandbox pode não disparar callback; polling funciona em localhost |
 | `PixGateway` com `@Profile` | só Inter | conta PJ e certificado fora do controle do grupo |
 | Nimbus para JWT | jjwt | compatível com Jackson 3 sem dependência extra |
-| DI manual no Android | Hilt, Koin | zero plugin, sem bug de toolchain, migrável |
+| `provider` + `ChangeNotifier` no app | Riverpod, Bloc, GetX | padrão do guia oficial do Flutter, sem geração de código, explicável em 1 slide |
 | MVVM + Repository em módulo único | Clean Architecture | atende "camadas" sem dobrar arquivos |
-| Room cache-only com `fallbackToDestructiveMigration` | migrations do Room | app nunca edita localmente; cache é recriado no sync |
+| drift cache-only com recriação destrutiva no `onUpgrade` | migrations do drift | app nunca edita localmente; cache é recriado no sync |
 | Fuso único `America/Sao_Paulo` | coluna de fuso por quadra | elimina slot deslocado sem lógica extra (RNF12) |
 | Render + Neon | VM + Caddy | HTTPS grátis sem operar servidor |
-| Maven no backend, Gradle Kotlin DSL no Android | Gradle nos dois projetos | o esqueleto Maven do backend já existia e funciona; converter o build não mudaria nenhum comportamento observável |
+| Maven no backend, `flutter`/pub no app | Gradle nos dois projetos | o esqueleto Maven do backend já existia e funciona; no app, o Gradle do Android fica encapsulado pelo `flutter build` |
 
-## 8. Versões fixadas (verificadas em 01/09/2026)
+## 8. Versões fixadas (backend verificado em 01/09/2026; app em 06/10/2026)
 
-Todas as versões ficam em `backend/gradle/libs.versions.toml` e `android/gradle/libs.versions.toml`; nada de `+` ou `latest`. A tabela é repetida no `README.md` com a mesma data de verificação.
+As versões ficam em `backend/pom.xml` e em `frontend/pubspec.yaml` (com `frontend/pubspec.lock` versionado); nada de `+`, `any` ou `latest`. A tabela é repetida no `README.md` com a mesma data de verificação.
 
 ### Backend
 
@@ -570,28 +716,31 @@ Todas as versões ficam em `backend/gradle/libs.versions.toml` e `android/gradle
 | Testcontainers | 2.0.x (`org.testcontainers:testcontainers-postgresql`) | Classe movida para `org.testcontainers.postgresql.PostgreSQLContainer`; confirmar a versão gerenciada pelo Boot 4.1.1 ao criar o projeto |
 | Gradle (wrapper) | 9.7.1 | Kotlin DSL |
 
-### Android
+### App Flutter (verificado em 06/10/2026)
 
 | Componente | Versão | Observação |
 |---|---|---|
-| Android Studio | Quail 4 (2026.1.4) | |
-| AGP | 9.4.0 | Exige Gradle ≥ 9.6, JDK ≥ 17, Build Tools 36; Kotlin embutido (não aplicar `org.jetbrains.kotlin.android`) |
-| Gradle (wrapper) | 9.7.1 | |
-| Kotlin | 2.4.10 | |
-| Plugin Compose Compiler (`org.jetbrains.kotlin.plugin.compose`) | 2.4.10 | **Obrigatoriamente igual à versão do Kotlin** |
-| KSP | `2.4.10-2.0.x` (prefixo = versão do Kotlin + sufixo de correção do próprio KSP) | Mesma regra do plugin Compose: a versão começa pela do Kotlin. Confirmar o número exato do sufixo na página de releases do KSP ao criar o projeto; KSP2 é padrão |
-| compileSdk / targetSdk / minSdk | 37 / 37 / 26 | Compose BOM 2026.08 exige compileSdk 37; minSdk 26 dá canais de notificação e cobre ~95 % dos aparelhos (RNF08) |
-| Compose BOM | 2026.08.00 (UI 1.12.0, Material 3 1.4.0) | Exige AGP ≥ 9.1.1 |
-| activity-compose / core-ktx / lifecycle | 1.13.0 / 1.19.0 / 2.11.0 | Lifecycle 2.11 com Compose exige AGP ≥ 9.2 |
-| Navigation Compose | 2.10.0 | Rotas `@Serializable` |
-| Room | 3.0.2 (`androidx.room3:room3-runtime`, `room3-compiler` via KSP) | Não misturar com `androidx.room` 2.x |
-| DataStore Preferences | 1.2.1 | |
-| Retrofit / OkHttp | 3.0.0 / 5.x (versão explícita no catálogo, conferir a última no Maven Central) | Retrofit 3 declara OkHttp 4.12; forçar 5.x no catálogo |
-| kotlinx.serialization | 1.11.0 (+ `converter-kotlinx-serialization` do Retrofit) | Uma única serialização no app |
-| play-services-location | 21.4.0 | |
-| ZXing core | 3.5.4 | Só geração de QR |
-| Coil | 3.6.1 (REC) | Exige Kotlin 2.4.10+ e Compose 1.12+ |
-| androidx.biometric | 1.1.0 (OPC) | `biometric-compose` ainda é alpha; fora do MVP |
+| Flutter (stable) / Dart | 3.47.6 (01/10/2026) / 3.13.5 | Todos os integrantes e o CI na mesma versão; `environment: sdk: ^3.13.0` no `pubspec.yaml` |
+| compileSdk / targetSdk / minSdk | 36 / 36 / 26 | compile/target = `flutter.compileSdkVersion`/`flutter.targetSdkVersion` do Flutter 3.47.6; minSdk 26 fixado no `build.gradle.kts` dá canais de notificação e cobre ~95 % dos aparelhos (RNF08) |
+| JDK do Gradle do Android | 21 (Temurin ou JBR do Android Studio) | Flutter 3.47 avisa abaixo do 17 |
+| AGP / Gradle / Kotlin de `frontend/android/` | os gerados pelo `flutter create` do 3.47.6 | Não editar à mão; o Flutter 3.47.6 avisa com AGP < 9.0.1, Gradle < 9.1.0 e Kotlin < 2.3.20 |
+| go_router | 18.0.2 | Exige Flutter >= 3.44 |
+| provider | 6.1.5+1 | |
+| dio | 5.11.1 | |
+| json_annotation / json_serializable | 4.12.0 / 6.14.1 | Uma única serialização no app |
+| drift / drift_flutter / drift_dev | 2.35.1 / 0.3.1 / 2.35.1 | `drift_flutter` já traz o SQLite nativo; o antigo `sqlite3_flutter_libs` foi descontinuado |
+| build_runner | 2.16.1 | Gera os `*.g.dart` (não versionados) |
+| flutter_secure_storage | 11.2.0 | Só o `token_jwt` |
+| shared_preferences | 2.5.6 | API `SharedPreferencesAsync` |
+| connectivity_plus | 7.3.2 | |
+| geolocator | 14.1.1 | |
+| url_launcher | 6.3.3 | URI `geo:` |
+| flutter_local_notifications | 22.3.1 | Exige core library desugaring e compileSdk >= 36 |
+| qr_flutter | 4.1.0 | Só geração de QR; última release em 2023, estável e muito usada (alternativa: pretty_qr_code) |
+| intl | 0.20.3 | Moeda e data em pt_BR |
+| cached_network_image | 4.0.4 (REC) | |
+| local_auth | 3.0.2 (OPC) | Exige `FlutterFragmentActivity`; fora do MVP |
+| flutter_lints / mocktail | 6.0.0 / 1.0.5 (dev) | mocktail é opcional; fakes à mão são o padrão |
 
 ### Armadilhas conhecidas (avisos no `CONTRIBUTING.md`)
 
@@ -605,13 +754,19 @@ Todas as versões ficam em `backend/gradle/libs.versions.toml` e `android/gradle
 | Testcontainers 1.x | Pacote `org.testcontainers.containers` inexistente | Linha 2.x, `org.testcontainers.postgresql`, artefato `testcontainers-postgresql` |
 | `record` como `@Entity` | Hibernate falha ao instanciar | Records só em DTO/`@Embeddable`; entidades com Lombok `@Getter @Setter @NoArgsConstructor` |
 | `@Data` em entidade | `equals/hashCode/toString` carregam relacionamentos lazy | Proibido em `entity` |
-| **KAPT** | Não vem no Kotlin embutido do AGP 9; build lento | KSP em tudo (Room 3); KAPT proibido |
-| **Plugin Compose ≠ versão do Kotlin** | Erro de compilação do compilador Compose | Versão idêntica à do Kotlin no catálogo (`compose-plugin = "2.4.10"`) |
-| Aplicar `org.jetbrains.kotlin.android` com AGP 9 | Conflito com o Kotlin embutido | Não aplicar; usar só `com.android.application` + `plugin.compose` + `plugin.serialization` + KSP |
-| Room 2 e Room 3 juntos | Duplicidade de anotações | Só `androidx.room3` |
-| Hilt 2.59 + AGP 9 | Bug `ComponentTreeDeps` | Não usamos Hilt |
-| Dynamic color como "tema escuro" | Cores mudam por aparelho, demo inconsistente | `lightColorScheme`/`darkColorScheme` explícitos, dynamic color desligado |
-| Cleartext HTTP para IP local | App não conecta ao backend no celular físico | `network_security_config` com cleartext só no build `debug` |
+| Esquecer o `build_runner` após mudar tabela do drift ou DTO | `Target of URI hasn't been generated: '...g.dart'`, `_$AppDatabase` indefinido | `dart run build_runner build --delete-conflicting-outputs` (ou `watch` durante o dia); o CI roda sempre |
+| Esquecer `--dart-define-from-file` | App aponta para o padrão `10.0.2.2`; release sem a URL do Render | Usar sempre os comandos do README (ou um atalho local do IDE com o mesmo argumento); release sempre com `config/release.json` |
+| Medir desempenho em debug | Telas lentas e "jank" que não existem em release | Medir em `--profile` ou `--release` (o debug roda em JIT) |
+| flutter_local_notifications sem desugaring | Build Android falha pedindo `coreLibraryDesugaring` | `isCoreLibraryDesugaringEnabled = true` em `compileOptions` + dependência `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:<versão do README do plugin>")` no `frontend/android/app/build.gradle.kts` |
+| `INTERNET` só nos manifests de debug/profile | APK release não alcança o backend (o `flutter create` declara `INTERNET` apenas em `src/debug` e `src/profile`) | Declarar `<uses-permission android:name="android.permission.INTERNET" />` em `frontend/android/app/src/main/AndroidManifest.xml` |
+| `BuildContext` usado depois de `await` | Navegação ou snackbar em tela já fechada; aviso `use_build_context_synchronously` | `if (!context.mounted) return;` |
+| `Timer`/`StreamSubscription` vivos após sair da tela | `notifyListeners` depois do `dispose`, polling eterno | Cancelar no `dispose()` do ViewModel |
+| Versões diferentes do Flutter entre integrantes | `pubspec.lock` e código gerado divergentes, CI quebra | Todos na 3.47.6 (`flutter --version`), igual ao CI |
+| Editar à mão AGP/Gradle/Kotlin de `frontend/android/` | Avisos ou erros do plugin Gradle do Flutter | Manter o que o `flutter create` gerou; atualizar só seguindo `flutter doctor` e os avisos do Flutter |
+| Hot reload depois de mudar `main()` ou providers | Dependência nova não aparece | Hot restart (`R`) |
+| `local_auth` com `FlutterActivity` | Biometria não abre | `MainActivity` estende `FlutterFragmentActivity` (só se a biometria entrar) |
+| Dynamic color como "tema escuro" | Cores mudam por aparelho, demo inconsistente | `ThemeData` claro e escuro com `ColorScheme` explícito; não adicionar pacote de dynamic color |
+| Cleartext HTTP para IP local | App não conecta ao backend no celular físico | `android:usesCleartextTraffic="true"` só em `frontend/android/app/src/debug/AndroidManifest.xml` |
 | Verificação de desenvolvedor Google (Brasil, 30/09/2026) | Sideload por navegador entra em fluxo com espera | Instalar sempre via `adb install`; avaliar conta de distribuição limitada em S9 |
 
 ## 9. Rastreabilidade
@@ -620,9 +775,9 @@ Todas as versões ficam em `backend/gradle/libs.versions.toml` e `android/gradle
 |---|---|
 | Critério 2 — arquitetura e justificativa das tecnologias | Seções 1, 2 e 7 |
 | Critério 2 — camadas do backend | Seção 3 (árvore + tabela de responsabilidades + regras de camada) |
-| Critério 2 — camadas do Android | Seção 4 (MVVM + Repository, `UiState/StateFlow`, fluxo de dados) |
+| Critério 2 — camadas do app | Seção 4 (MVVM + Repository, `UiState` + `ChangeNotifier`, fluxo de dados, equivalências Android nativo -> Flutter) |
 | Critério 4 — sincronização e API externa | Seções 1 e 4 (fluxo de dados), profiles da seção 6 |
 | Critério 6 — tratamento de erros, camadas, boas práticas | Seções 3, 4 e 5 |
-| RNF01, RNF02, RNF03 | JWT Nimbus, variáveis de ambiente e `.gitignore` (seção 6), Android nunca fala com o Inter (seção 1) |
+| RNF01, RNF02, RNF03 | JWT Nimbus, variáveis de ambiente e `.gitignore` (seção 6), app nunca fala com o Inter (seção 1) |
 | RNF05, RNF09, RNF10 | Ambientes e kit offline (seção 6), `ProblemDetail` (seção 5), catálogo de versões e CI (seções 6 e 8) |
 | RNF08, RNF12 | minSdk/targetSdk (seção 8), `FusoConfig` e `APP_FUSO_HORARIO` (seções 3 e 6) |

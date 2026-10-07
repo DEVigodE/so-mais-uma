@@ -36,20 +36,36 @@ jobs:
             backend/target/surefire-reports/
             backend/target/failsafe-reports/
 
-  android:
+  frontend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: . } }
     steps:
       - uses: actions/checkout@v4
-      - name: Módulo Android ainda não existe
-        if: hashFiles('android/gradlew') == ''
-        run: echo "Sem android/gradlew no repositório; job ignorado até o módulo ser criado."
+      - name: Projeto Flutter ainda não existe
+        if: hashFiles('frontend/pubspec.yaml') == ''
+        run: echo "Sem frontend/pubspec.yaml no repositório; job ignorado até o projeto Flutter ser criado."
+      # JDK para o Gradle do Android usado pelo flutter build apk
       - uses: actions/setup-java@v4
-        if: hashFiles('android/gradlew') != ''
+        if: hashFiles('frontend/pubspec.yaml') != ''
         with: { distribution: temurin, java-version: '21' }
-      - uses: gradle/actions/setup-gradle@v4
-        if: hashFiles('android/gradlew') != ''
-      - name: Testes unitários e APK debug
-        if: hashFiles('android/gradlew') != ''
-        working-directory: android
-        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon
+      - uses: subosito/flutter-action@v2
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        with: { channel: stable, flutter-version: '3.47.6', cache: true }
+      - name: Dependências, geração de código, análise e testes
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        working-directory: frontend
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter analyze
+          flutter test
+      - name: APK debug
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        working-directory: frontend
+        run: flutter build apk --debug --dart-define-from-file=config/dev.json.exemplo
+      - name: Artefato APK debug
+        if: hashFiles('frontend/pubspec.yaml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk

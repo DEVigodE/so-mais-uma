@@ -1,37 +1,38 @@
 # Só mais uma
 
-App Android para encontrar quadras esportivas, ver horários livres, reservar e pagar via Pix, com confirmação automática da reserva.
+App Flutter (Android) para encontrar quadras esportivas, ver horários livres, reservar e pagar via Pix, com confirmação automática da reserva.
 
-![Android](https://img.shields.io/badge/Android-Kotlin%20%2B%20Jetpack%20Compose-3DDC84) ![Backend](https://img.shields.io/badge/Backend-Spring%20Boot%204.1%20%2B%20JDK%2021-6DB33F) ![Banco](https://img.shields.io/badge/Banco-PostgreSQL%2018-336791) ![Pix](https://img.shields.io/badge/Pagamento-Pix%20Banco%20Inter%20(sandbox)-FF7A00) ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF) ![Status](https://img.shields.io/badge/Status-planejamento%20(S1)-lightgrey)
+![App](https://img.shields.io/badge/App-Flutter%203.47%20%2B%20Dart%203.13-02569B) ![Backend](https://img.shields.io/badge/Backend-Spring%20Boot%204.1%20%2B%20JDK%2021-6DB33F) ![Banco](https://img.shields.io/badge/Banco-PostgreSQL%2018-336791) ![Pix](https://img.shields.io/badge/Pagamento-Pix%20Banco%20Inter%20(sandbox)-FF7A00) ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF) ![Status](https://img.shields.io/badge/Status-planejamento%20(S1)-lightgrey)
 
 ## Visão do produto
 
 Quem quer jogar perde tempo ligando para quadras para descobrir horário livre e combinar pagamento; quem administra uma quadra perde reservas e recebe sem controle. O "Só mais uma" resolve o fluxo central em um só app: o **CLIENTE** encontra a quadra mais perto (geolocalização), vê a grade de horários de 60 min, reserva um slot com exclusividade garantida no banco, paga por Pix (QR Code e copia e cola) e recebe a confirmação automática; o **DONO** cadastra suas quadras por CEP, define os horários de funcionamento e acompanha ou cancela as reservas recebidas. Projeto acadêmico de 4 estudantes entre 01/09 e 11/12/2026, com Pix real no sandbox do Banco Inter e um gateway simulado como fallback de demonstração. Detalhes em [docs/01-visao-do-produto.md](docs/01-visao-do-produto.md).
 
-## Stack e versões (verificadas em 01/09/2026)
+## Stack e versões (backend verificado em 01/09/2026; app verificado em 06/10/2026)
+
+Atualizado em 06/10/2026: o app passou de Android nativo (Kotlin + Jetpack Compose) para Flutter. O backend não mudou. Equivalências componente a componente em [docs/09-arquitetura.md](docs/09-arquitetura.md), seção 4.
 
 | Componente | Versão fixada | Onde |
 |---|---|---|
-| JDK | 25 LTS no backend (`java.version` 25 no `pom.xml`); 21 LTS (Temurin) no Android | backend e Android |
+| JDK | 25 LTS no backend (`java.version` 25 no `pom.xml`); 21 LTS (Temurin ou o JBR do Android Studio) para o Gradle do Android usado pelo `flutter build apk` | backend e `frontend/android/` |
 | Spring Boot | 4.1.x (4.1.1 em 01/09/2026): Spring Framework 7, Spring Security 7.1, Hibernate 7, Jackson 3 (`tools.jackson.*`) | `backend/pom.xml` (Maven, parent `spring-boot-starter-parent:4.1.1`) |
 | Starters | `starter-webmvc`, `data-jpa`, `security`, `security-oauth2-resource-server` (JWT HS256 via Nimbus), `validation`, `flyway` + `flyway-database-postgresql`, `actuator`, `restclient`, `spring-boot-docker-compose` (dev) | `backend/pom.xml` |
 | springdoc-openapi | 3.1.0 (`springdoc-openapi-starter-webmvc-ui`) | Swagger |
 | PostgreSQL | 18 (`postgres:18-alpine`); driver 42.7.12 gerenciado pelo Boot; Flyway >= 12.4 gerenciado pelo Boot | `backend/compose.yaml` |
 | Testes backend | JUnit 5, `spring-boot-starter-webmvc-test`, Testcontainers 2.x (`testcontainers-postgresql`), Mockito (`@MockitoBean`) | `backend/src/test` |
 | Lombok | 1.18.48 (só nas entidades JPA; DTOs são records) | backend |
-| Android Studio | Quail 4 (2026.1.4) | — |
-| AGP / Gradle | 9.4.0 / wrapper 9.7.1 (Kotlin embutido; KSP em tudo, sem KAPT) | `android/gradle/libs.versions.toml` |
-| Kotlin | 2.4.10 (plugin `org.jetbrains.kotlin.plugin.compose` na mesma versão) | catálogo |
-| SDK | compileSdk = targetSdk = 37 (Android 17); minSdk 26 | `android/app/build.gradle.kts` |
-| Jetpack Compose | BOM 2026.08.00 (Compose UI 1.12.0, Material 3 1.4.0) | catálogo |
-| Navigation Compose | 2.10.0 (rotas tipadas `@Serializable`) | catálogo |
-| Room | 3.0.2 (`androidx.room3`, KSP) | catálogo |
-| DataStore Preferences | 1.2.1 | catálogo |
-| Lifecycle / activity-compose | 2.11.0 / 1.13.0 | catálogo |
-| Rede | Retrofit 3.0.0 + OkHttp 5.x (versão explícita) + `converter-kotlinx-serialization` + kotlinx.serialization 1.11.0 | catálogo |
-| Localização | play-services-location 21.4.0 | catálogo |
-| QR Code | ZXing core 3.5.4 (só geração) | catálogo |
-| Imagens (recomendado) | Coil 3.6.1 | catálogo |
+| Flutter / Dart | 3.47.6 stable (01/10/2026) / 3.13.5 | `frontend/pubspec.yaml` (`environment: sdk: ^3.13.0`); CI fixa `flutter-version: 3.47.6` |
+| Android (alvo do MVP) | compileSdk = targetSdk = 36 (padrão do Flutter 3.47.6); minSdk 26; applicationId `br.com.somaisuma.app` | `frontend/android/app/build.gradle.kts` (Gradle/AGP/Kotlin gerados pelo `flutter create`, sem edição manual) |
+| Arquitetura | MVVM + Repository do guia oficial do Flutter: `ChangeNotifier` + `provider` 6.1.5+1 (DI) | `frontend/lib/` |
+| Navegação | go_router 18.0.2 (`StatefulShellRoute` por perfil) | `pubspec.yaml` |
+| Rede | dio 5.11.1 + json_serializable 6.14.1 / json_annotation 4.12.0 | `pubspec.yaml` |
+| Cache local | drift 2.35.1 + drift_flutter 0.3.1 (código gerado com build_runner 2.16.1) | `pubspec.yaml` |
+| Sessão | flutter_secure_storage 11.2.0 (token JWT) + shared_preferences 2.5.6 (demais chaves) | `pubspec.yaml` |
+| Recursos nativos | geolocator 14.1.1, url_launcher 6.3.3 (`geo:`), flutter_local_notifications 22.3.1, connectivity_plus 7.3.2 | `pubspec.yaml` |
+| QR Code / formatação | qr_flutter 4.1.0 (só geração) / intl 0.20.3 | `pubspec.yaml` |
+| Imagens (recomendado) | cached_network_image 4.0.4 | `pubspec.yaml` |
+| Testes e lint do app | `flutter_test`, mocktail 1.0.5 (opcional), flutter_lints 6.0.0 | `frontend/test` |
+| IDE do app | VS Code com extensões Dart e Flutter (ou Android Studio com plugin Flutter); Android SDK e emulador continuam necessários | — |
 | Docker Desktop | versão atual estável (necessário para `compose.yaml` e Testcontainers) | — |
 
 Por que estas escolhas: [docs/09-arquitetura.md](docs/09-arquitetura.md). O que ficou de fora e por quê: [docs/00-indice.md](docs/00-indice.md), seção 4.
@@ -49,10 +50,12 @@ so-mais-uma/
 │   ├── compose.yaml         # postgres:18-alpine
 │   ├── Dockerfile           # multi-stage, eclipse-temurin:25-jdk -> eclipse-temurin:25-jre (Render)
 │   └── .env.exemplo
-├── android/                 # app Kotlin + Jetpack Compose
-│   ├── app/src/main/java/br/com/somaisuma/app/{di,data,model,ui,util}
-│   ├── app/src/test/java    # ViewModels com FakeApiService
-│   └── gradle/libs.versions.toml
+├── frontend/                # app Flutter (Dart), alvo Android
+│   ├── lib/{config,data,model,ui,util}   # main.dart, app.dart na raiz de lib/
+│   ├── test/                # ViewModels com FakeApiClient, widgets, DAO drift em memória
+│   ├── config/              # dev.json.exemplo (modelo), dev.json (ignorado), release.json
+│   ├── android/             # Gradle gerado pelo flutter create (applicationId, minSdk, assinatura)
+│   └── pubspec.yaml · pubspec.lock
 ├── docs/                    # 00-indice.md ... 23-plano-de-testes.md
 ├── scripts/                 # *.http (token sandbox, cadastrar-webhook), reset-demo.sql
 ├── .github/workflows/ci.yml
@@ -64,11 +67,15 @@ so-mais-uma/
 
 | Ferramenta | Versão | Observação |
 |---|---|---|
-| JDK | 21 (Temurin) | `java -version` deve mostrar 21; o mesmo JDK serve para Gradle, Android Studio e Spring |
-| Android Studio | Quail 4 (2026.1.4) ou superior | inclui SDK 37 e emulador |
+| JDK | 25 (backend) e 21 (Gradle do Android) | o Maven Wrapper do backend usa o 25; o `flutter build apk` usa o 21 (Temurin ou o JBR do Android Studio; `flutter config --jdk-dir` se houver mais de um) |
+| Flutter SDK | 3.47.6 stable (traz Dart 3.13.5) | `flutter --version` igual em todos e no CI; `flutter upgrade` se estiver em versão anterior; caminho do SDK sem espaços |
+| Android SDK + emulador | via Android Studio (SDK Manager / Device Manager) ou cmdline-tools | platform 36, build-tools e platform-tools; `flutter doctor --android-licenses` uma vez |
+| IDE | VS Code com Dart + Flutter (recomendadas no `so-mais-uma.code-workspace`) ou Android Studio com plugin Flutter | — |
 | Docker Desktop | atual | precisa estar rodando para `docker compose` e para os testes `*IT` |
 | Git | 2.40+ | — |
 | Opcional | `adb` (vem com o Android SDK Platform-Tools), `curl`, `openssl` | instalação do APK e testes do sandbox Inter |
+
+`flutter doctor` precisa mostrar Flutter e Android toolchain verdes antes do primeiro build.
 
 ## Backend: instalação e execução
 
@@ -149,38 +156,48 @@ Usuários de demonstração criados pelo seed (`scripts/seed-demo.sql`, aplicado
 
 Fluxo rápido no Swagger: `POST /api/v1/auth/login` -> copiar `token` -> botão Authorize -> `GET /api/v1/quadras` -> `GET /api/v1/quadras/{id}/slots?data=<amanhã>` -> `POST /api/v1/reservas` -> `POST /api/v1/dev/pagamentos/{txid}/confirmar` (header `X-Dev-Key`) -> `GET /api/v1/reservas/{id}` com status `CONFIRMADA`.
 
-## App Android: execução
+## App Flutter: execução
 
-1. Abrir a pasta `android/` no Android Studio Quail 4 (File > Open) e aguardar o sync do Gradle (JDK 21 em Settings > Build Tools > Gradle > Gradle JDK).
-2. Definir a URL do backend em `android/local.properties` (arquivo ignorado pelo Git; a propriedade vira `BuildConfig.API_BASE_URL`):
+1. Baixar dependências e gerar o código do drift e do json_serializable (os `*.g.dart` não são versionados; repetir sempre que mudar uma tabela ou um DTO):
 
 ```bash
-# emulador (10.0.2.2 é o localhost do computador visto pelo emulador)
-API_BASE_URL=http://10.0.2.2:8080/api/v1
-# celular físico na mesma rede Wi-Fi ou hotspot: IP da LAN do computador
-# API_BASE_URL=http://192.168.0.10:8080/api/v1
+cd frontend
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-   Se a propriedade não existir, o build `debug` usa `http://10.0.2.2:8080/api/v1`. Wi-Fi da faculdade bloqueando IPs locais: usar o hotspot do celular. Notebook fraco para emulador + Docker: usar celular físico via USB (`adb devices`).
-3. Build variants:
+2. Definir a URL do backend em `frontend/config/dev.json` (ignorado pelo Git; copiar de `config/dev.json.exemplo`). Os valores entram no app por `--dart-define-from-file` e são lidos em `lib/config/ambiente.dart` (`Ambiente.apiBaseUrl`, `Ambiente.devKey`):
 
-| Variant | Pacote | Base URL | Cleartext HTTP | Botão "Simular pagamento" | Uso |
+```json
+{
+  "API_BASE_URL": "http://10.0.2.2:8080/api/v1",
+  "DEV_KEY": "mesmo-valor-do-DEV_KEY-do-backend"
+}
+```
+
+   `10.0.2.2` é o localhost do computador visto pelo emulador; para celular físico na mesma rede Wi-Fi ou hotspot, usar o IP da LAN do computador (`http://192.168.0.10:8080/api/v1`). Sem o arquivo, o app usa `http://10.0.2.2:8080/api/v1`. Wi-Fi da faculdade bloqueando IPs locais: usar o hotspot do celular. Notebook fraco para emulador + Docker: usar celular físico via USB (`adb devices` / `flutter devices`).
+3. Modos de build:
+
+| Modo | Pacote | Base URL | Cleartext HTTP | Botão "Simular pagamento" | Uso |
 |---|---|---|---|---|---|
-| `debug` | `br.com.somaisuma.app.debug` (`applicationIdSuffix ".debug"`) | `local.properties` ou `10.0.2.2` | permitido (`network_security_config` só em debug) | sim (`BuildConfig.DEV_KEY`, lido de `DEV_KEY=` em `android/local.properties`) | desenvolvimento, testes com usuários, kit de demo offline |
-| `release` | `br.com.somaisuma.app` | URL do Render (HTTPS), fixada no `build.gradle.kts` | não | não | beta público, apresentação |
+| debug | `br.com.somaisuma.app.debug` (`applicationIdSuffix ".debug"` no `frontend/android/app/build.gradle.kts`) | `config/dev.json` ou `10.0.2.2` | permitido (`android:usesCleartextTraffic="true"` só em `frontend/android/app/src/debug/AndroidManifest.xml`) | sim (`kDebugMode && Ambiente.devKey.isNotEmpty`) | desenvolvimento, testes com usuários, kit de demo offline |
+| release | `br.com.somaisuma.app` | URL do Render (HTTPS) em `config/release.json` (versionado, sem segredo) | não | não | beta público, apresentação |
 
 O sufixo `.debug` permite instalar as duas variantes no mesmo celular, o que o kit de demo offline exige.
 
-4. Rodar pelo botão Run (emulador ou celular) ou gerar e instalar o APK:
+4. Rodar com hot reload (emulador ou celular) ou gerar e instalar o APK:
 
 ```bash
-cd android
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-# release assinado (keystore fora do repositório; ver CONTRIBUTING.md)
-./gradlew assembleRelease
-adb install -r app/build/outputs/apk/release/app-release.apk
+cd frontend
+flutter run --dart-define-from-file=config/dev.json
+flutter build apk --debug --dart-define-from-file=config/dev.json
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+# release assinado (keystore e android/key.properties fora do repositório; ver CONTRIBUTING.md)
+flutter build apk --release --dart-define-from-file=config/release.json
+adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
+
+   Desempenho (RNF04) só se mede em `--release` ou `--profile`: o modo debug roda em JIT e é bem mais lento.
 
 Instalação sempre via `adb`: desde 30/09/2026 a verificação de desenvolvedor do Google no Brasil pode colocar o sideload por navegador em um fluxo com espera; `adb install` não é afetado (risco R7 em [docs/19-riscos.md](docs/19-riscos.md)). Permissões pedidas em runtime: localização (aproximada ou precisa) ao tocar "Ativar localização" na tela Quadras; notificações (Android 13+) na primeira abertura da tela Pagamento. O app funciona sem ambas, de forma degradada.
 
@@ -191,13 +208,13 @@ Instalação sempre via `adb`: desde 30/09/2026 a verificação de desenvolvedor
 cd backend && ./mvnw verify
 # só a corrida de 10 threads no mesmo slot (1x201, 9x409)
 cd backend && ./mvnw verify -Dtest=NONE -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=ReservaConcorrenciaIT
-# android: ViewModels e utilitários na JVM
-cd android && ./gradlew testDebugUnitTest
-# android (opcional, exige emulador): teste de DAO do Room
-cd android && ./gradlew connectedDebugAndroidTest
+# app: análise estática + ViewModels, widgets, DAO do drift em memória e utilitários (sem emulador)
+cd frontend && flutter analyze && flutter test
+# app (opcional, exige emulador): testes de integração
+cd frontend && flutter test integration_test
 ```
 
-Relatórios em `backend/target/surefire-reports/` e `backend/target/failsafe-reports/` e `android/app/build/reports/tests/testDebugUnitTest/index.html`. Casos de teste manuais CT-01..CT-30, o que roda no CI e critérios de saída: [docs/23-plano-de-testes.md](docs/23-plano-de-testes.md). Testes com usuários (SUS): [docs/22-testes-com-usuarios.md](docs/22-testes-com-usuarios.md).
+Relatórios em `backend/target/surefire-reports/` e `backend/target/failsafe-reports/`; o resultado do app sai no terminal do `flutter test` (cobertura opcional com `flutter test --coverage` em `frontend/coverage/lcov.info`). Casos de teste manuais CT-01..CT-30, o que roda no CI e critérios de saída: [docs/23-plano-de-testes.md](docs/23-plano-de-testes.md). Testes com usuários (SUS): [docs/22-testes-com-usuarios.md](docs/22-testes-com-usuarios.md).
 
 ## Profiles Spring e pagamento Pix
 
@@ -241,20 +258,20 @@ Comece por [docs/00-indice.md](docs/00-indice.md) (sumário, matriz de rastreabi
 
 ## Equipe
 
-Cada integrante é dono de uma fatia vertical (backend + Android + documentação + testes) e suplente de outra; ninguém mergeia o próprio PR. Evidência do critério 7: `git shortlog -sn --no-merges -- backend android docs`.
+Cada integrante é dono de uma fatia vertical (backend + app Flutter + documentação + testes) e suplente de outra; ninguém mergeia o próprio PR. Evidência do critério 7: `git shortlog -sn --no-merges -- backend frontend docs`.
 
 | Integrante | Fatia | Suplente de |
 |---|---|---|
 | Integrante A | Autenticação, usuário, segurança (JWT, bloqueio de login), repositório, CI, Render/Neon, APK release, README | D |
 | Integrante B | Quadra e HorarioFuncionamento (os 2 CRUDs), CEP (BrasilAPI/ViaCEP), modelagem do banco, protótipo Figma | C |
-| Integrante C | Reserva, slots, concorrência (índice único + 10 threads), Room/sincronização/offline, geolocalização, testes com usuários | B |
+| Integrante C | Reserva, slots, concorrência (índice único + 10 threads), cache drift/sincronização/offline, geolocalização, testes com usuários | B |
 | Integrante D | Pagamento Pix (Inter + simulado), webhook, burocracia do Inter, backlog/board, plano de testes, roteiro da demo | A |
 
 Detalhes em [docs/15-divisao-equipe.md](docs/15-divisao-equipe.md) e regras de contribuição em `CONTRIBUTING.md`.
 
 ## Limitações conhecidas (MVP)
 
-Fuso único `America/Sao_Paulo`; JWT de 7 dias sem revogação (logout só limpa o dispositivo); todo Pix é recebido na única chave configurada e o repasse ao dono ocorre fora do app; estorno é manual; webhook do Inter sem mTLS de entrada; sem paginação; publicação na Play Store fora do escopo. Lista completa e motivos em [docs/02-escopo-mvp.md](docs/02-escopo-mvp.md).
+Fuso único `America/Sao_Paulo`; JWT de 7 dias sem revogação (logout só limpa o dispositivo); todo Pix é recebido na única chave configurada e o repasse ao dono ocorre fora do app; estorno é manual; webhook do Inter sem mTLS de entrada; sem paginação; publicação na Play Store fora do escopo; iOS fora do MVP (o código Flutter não impede gerar a plataforma depois, mas exige macOS, Xcode e conta Apple). Lista completa e motivos em [docs/02-escopo-mvp.md](docs/02-escopo-mvp.md).
 
 ## Licença
 

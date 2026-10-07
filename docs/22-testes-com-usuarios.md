@@ -2,6 +2,8 @@
 
 Estratégia simples de teste de usabilidade do app "Só mais uma": 5 a 8 participantes, 6 tarefas (uma por fluxo central), SUS e três perguntas abertas, com critério de aceite mensurável (SUS >= 68 e >= 80 % de sucesso por tarefa) e correções priorizadas até o congelamento de escopo em 27/11.
 
+Atualizado em 06/10/2026: app passou de Android nativo (Kotlin + Compose) para Flutter (decisão do projeto em 06/10/2026). Tarefas, métricas e critérios não mudam; mudam só a geração do APK e as APIs de acessibilidade citadas (equivalências em docs/09-arquitetura.md). Os testes continuam em celulares Android, com TalkBack.
+
 ## 1. Objetivos
 
 | # | Objetivo | Evidência para a disciplina |
@@ -33,13 +35,13 @@ Agenda sugerida: seg 09/11 (2 sessões, C + A), ter 10/11 (2 sessões, C + B), q
 
 | Componente | Configuração obrigatória | Plano B |
 |---|---|---|
-| App | APK `debug` (`v0.2-beta` ou posterior) instalado via `adb install -r` no celular do grupo (2 celulares carregados). Build debug porque o botão "Simular pagamento" só existe em `BuildConfig.DEBUG` | celular do participante só se ele quiser e via `adb` (sideload por navegador pode cair no fluxo de verificação Google, R7) |
+| App | APK `debug` (`v0.2-beta` ou posterior) gerado em `frontend/` com `flutter build apk --debug --dart-define-from-file=config/dev.json` (com `API_BASE_URL` do Render e a `DEV_KEY` do profile `simulado`) e instalado via `adb install -r build/app/outputs/flutter-apk/app-debug.apk` no celular do grupo (2 celulares carregados). Build debug porque o botão "Simular pagamento" só aparece com `kDebugMode && Ambiente.devKey.isNotEmpty` | celular do participante só se ele quiser e via `adb` (sideload por navegador pode cair no fluxo de verificação Google, R7) |
 | Backend | Render + Neon com `SPRING_PROFILES_ACTIVE=simulado` durante a semana de testes (evita a janela 8h-20h do sandbox Inter e o certificado de 30 dias) | kit de demo offline: `docker compose up` (postgres + api jar) no notebook + hotspot do celular + APK apontando para o IP do notebook (ver docs/09-arquitetura.md) |
 | Pagamento | `SimuladoPixGateway`; participante toca "Simular pagamento" (chama `POST /api/v1/dev/pagamentos/{txid}/confirmar` com `X-Dev-Key`) | se o botão falhar, facilitador confirma pelo Swagger |
 | Dados | seed `scripts/seed-demo.sql` (3 quadras georreferenciadas na cidade do grupo, horários seg-dom 08-22h) + 1 quadra extra "Quadra Teste Usabilidade" com slots livres amanhã às 19h e 20h e **1 reserva CONFIRMADA para amanhã** (usada na T6), vinculada à conta DONO da sessão | reset do banco entre sessões: `docker compose down -v && docker compose up -d` (kit offline) ou script `scripts/reset-demo.sql` (Render). O script é obrigatório **antes de cada sessão** e recria a "Quadra Teste Usabilidade" com a reserva confirmada de amanhã; sem ela a T6 não mede nada |
 | Contas | cada participante cria a própria conta na tarefa 1 (e-mail fictício `teste<N>@somaisuma.local`); `cliente@demo.com` / `dono@demo.com` (senha `Senha123`) só como reserva | — |
-| Localização | GPS ligado no celular; se em ambiente fechado sem fix, `LocalizacaoProvider` cai para `lastLocation` e depois para `ultima_lat/lon` do DataStore (R14) | facilitador abre o Google Maps antes para "aquecer" o fix |
-| Aquecimento | 10 min antes: `GET /actuator/health` no Render (cold start 30-60 s), login de teste, limpar dados do app (`adb shell pm clear br.com.somaisuma.app`) | — |
+| Localização | GPS ligado no celular; se em ambiente fechado sem fix, `LocalizacaoService` cai para `getLastKnownPosition` e depois para `ultima_lat/lon` do `SessaoStore` (R14) | facilitador abre o Google Maps antes para "aquecer" o fix |
+| Aquecimento | 10 min antes: `GET /actuator/health` no Render (cold start 30-60 s), login de teste, limpar dados do app (`adb shell pm clear br.com.somaisuma.app.debug`, o applicationId do APK debug) | — |
 | Registro | gravação de tela com `adb shell screenrecord` (com consentimento) + formulário de observação em papel/planilha | só formulário |
 
 ## 4. Roteiro: 6 tarefas (uma por fluxo central)
@@ -53,7 +55,7 @@ O facilitador lê a tarefa em voz alta, não explica a interface e só intervém
 | T3 | CLIENTE | "Reserve essa quadra para amanhã às 19h e faça o pagamento até a reserva aparecer como confirmada." | DetalheQuadra (data, slot LIVRE) -> ConfirmarReserva -> Pagamento (QR, copiar, "Simular pagamento") -> DetalheReserva | RF12, RF13, RF19, RF20, RF24 | vê o status "Confirmada" no DetalheReserva (e a notificação local, se habilitada) | 3 min | 5 min |
 | T4 | CLIENTE | "Veja suas reservas e cancele a reserva que você acabou de fazer." | MinhasReservas (aba Próximas) -> DetalheReserva -> cancelar (diálogo) | RF15, RF17 | reserva aparece com chip CANCELADA no Histórico | 1 min | 2,5 min |
 | T5 | DONO | "Cadastre uma quadra sua de futebol society, R$ 120 por hora, neste endereço: CEP 01001-000, número 100." | MinhasQuadras (FAB) -> FormQuadra (CEP + Buscar preenche endereço/lat/lon) -> Salvar | RF06, RF09 | quadra aparece em MinhasQuadras com endereço preenchido a partir do CEP (participante não digitou logradouro/cidade) | 3 min | 5 min |
-| T6 | DONO | "Deixe essa quadra aberta de segunda a sexta das 18h às 23h e fechada no fim de semana. Depois abra a quadra 'Quadra Teste Usabilidade' e diga quem reservou e em que horário para amanhã." | MinhasQuadras -> HorariosQuadra (switch + TimePicker por dia) -> MinhasQuadras -> ReservasQuadra da "Quadra Teste Usabilidade" (seletor de data) | RF11, RF18 | 5 linhas seg-sex com 18:00-23:00, sáb/dom "Fechado"; abre ReservasQuadra da quadra de teste com a data de amanhã e lê em voz alta o nome do cliente e o horário da reserva CONFIRMADA semeada pelo script de reinicialização | 3 min | 5 min |
+| T6 | DONO | "Deixe essa quadra aberta de segunda a sexta das 18h às 23h e fechada no fim de semana. Depois abra a quadra 'Quadra Teste Usabilidade' e diga quem reservou e em que horário para amanhã." | MinhasQuadras -> HorariosQuadra (switch + seletor de hora `showTimePicker` por dia) -> MinhasQuadras -> ReservasQuadra da "Quadra Teste Usabilidade" (seletor de data) | RF11, RF18 | 5 linhas seg-sex com 18:00-23:00, sáb/dom "Fechado"; abre ReservasQuadra da quadra de teste com a data de amanhã e lê em voz alta o nome do cliente e o horário da reserva CONFIRMADA semeada pelo script de reinicialização | 3 min | 5 min |
 
 Participantes CLIENTE fazem T1-T4; participantes DONO fazem T1, T5, T6. Ordem fixa (os fluxos dependem um do outro). O CEP 01001-000 é o exemplo público da BrasilAPI (devolve latitude/longitude); trocar por um CEP da cidade do grupo se preferirem realismo.
 
@@ -210,16 +212,16 @@ SUS médio: __ (meta >= 68). Segunda medição de 18-19/11 (se houve): __.
 
 ## 11. Checklist de acessibilidade básica (executar na mesma semana, 09 a 13/11)
 
-Executado por Integrante C com apoio de A nas 13 telas do docs/04-telas.md; resultado registrado na seção de resultados acima. Ferramentas: TalkBack (Configurações > Acessibilidade), "Tamanho da fonte" em 200 % (Configurações > Tela), Layout Inspector do Android Studio para medir alvos.
+Executado por Integrante C com apoio de A nas 13 telas do docs/04-telas.md; resultado registrado na seção de resultados acima. Ferramentas: TalkBack (Configurações > Acessibilidade), "Tamanho da fonte" em 200 % (Configurações > Tela), Widget Inspector do Flutter DevTools (ou "Mostrar limites de layout" nas Opções do desenvolvedor do Android) para medir alvos.
 
 | # | Item | Como verificar | Aceite |
 |---|---|---|---|
-| A1 | Todo ícone/imagem com ação tem `contentDescription` (ícones decorativos com `null`) | TalkBack lê o nome ao focar; QR lê "QR Code Pix, R$ 80,00" | sem "botão sem rótulo" |
-| A2 | Alvos de toque >= 48 dp | Layout Inspector nos chips de esporte, slots da grade, switches de HorariosQuadra, ícones da bottom-nav | 100 % dos alvos |
+| A1 | Todo ícone/imagem com ação tem rótulo (`Semantics(label: ...)`, `semanticLabel` em `Icon`/`Image`, `tooltip` em `IconButton`; decorativos sem rótulo ou com `ExcludeSemantics`) | TalkBack lê o nome ao focar; QR lê "QR Code Pix, R$ 80,00" | sem "botão sem rótulo" |
+| A2 | Alvos de toque >= 48 dp lógicos (`kMinInteractiveDimension`, `MaterialTapTargetSize.padded`) | Widget Inspector do DevTools nos chips de esporte, slots da grade, switches de HorariosQuadra, ícones da bottom-nav | 100 % dos alvos |
 | A3 | Fonte do sistema em 200 % não corta texto nem esconde botão | percorrer as 13 telas; atenção a cards de Quadras, grade de slots, contador do Pagamento | sem corte; scroll aparece onde necessário |
-| A4 | Contraste Material 3 (tema claro e escuro explícitos, dynamic color desligado) | conferir `ChipStatus` (CONFIRMADA/PENDENTE/CANCELADA/EXPIRADA) e `BannerOffline` nos dois temas | sem texto cinza sobre cinza |
+| A4 | Contraste Material 3 (`ThemeData` claro e escuro com `ColorScheme` explícito, sem dynamic color) | conferir `ChipStatus` (CONFIRMADA/PENDENTE/CANCELADA/EXPIRADA) e `BannerOffline` nos dois temas | sem texto cinza sobre cinza |
 | A5 | Navegação por TalkBack completa a T3 (reservar e pagar) | executar a T3 só com gestos do TalkBack | conclui sem tocar "às cegas" |
-| A6 | Ordem de foco e `ImeAction.Next` nos formulários (Login, Cadastro, FormQuadra, Perfil) | teclado avança campo a campo; último campo dispara a ação | sem pular campo |
+| A6 | Ordem de foco e `textInputAction: TextInputAction.next` nos formulários (Login, Cadastro, FormQuadra, Perfil) | teclado avança campo a campo; último campo dispara a ação | sem pular campo |
 | A7 | Estados carregando/vazio/erro anunciados | `CarregandoBox`, `VazioBox`, `ErroBox(onTentarNovamente)` têm texto lido pelo TalkBack | sim |
 | A8 | Mensagens de erro por campo (`CampoTextoValidado`) associadas ao campo | TalkBack lê o erro ao focar o campo | sim |
 | A9 | Não depende só de cor: status também em texto | chips e slots têm rótulo textual (LIVRE, OCUPADO, PASSADO, FECHADO) | sim |

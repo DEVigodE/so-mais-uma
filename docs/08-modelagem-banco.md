@@ -70,7 +70,7 @@ Limites que o `UsuarioRequest` precisa declarar (os mesmos da coluna; sem a anot
 | `uf` | CHAR(2) | NOT NULL | |
 | `latitude` | NUMERIC(9,6) | NULL, CHECK -90..90 | Da BrasilAPI CEP v2 ou digitada; base da distância (RF22) |
 | `longitude` | NUMERIC(9,6) | NULL, CHECK -180..180 | As duas coordenadas são nulas ou preenchidas juntas (CHECK) |
-| `foto_url` | VARCHAR(300) | | Exibida com Coil (REC); sem upload no MVP |
+| `foto_url` | VARCHAR(300) | | Exibida com cached_network_image (REC); sem upload no MVP |
 | `ativa` | BOOLEAN | NOT NULL DEFAULT TRUE | Soft delete de RF06/RF10; inativa some de `GET /quadras`, continua em `GET /quadras/minhas` |
 | `criado_em`, `atualizado_em` | TIMESTAMPTZ | NOT NULL DEFAULT now() | |
 
@@ -98,7 +98,7 @@ Limites que o `QuadraRequest` precisa declarar (os mesmos da coluna; sem a anota
 | `hora_fechamento` | TIME | NOT NULL, CHECK > abertura, CHECK minuto = 0 | Último slot começa em `hora_fechamento - 1 h` |
 | — | — | UNIQUE (`quadra_id`, `dia_semana`) | Uma faixa por dia (RN19); violação -> 409 `DIA_JA_CADASTRADO` |
 
-Dia sem linha = fechado (RN19). Abertura e fechamento em hora cheia são exigidos porque os slots são de 60 min a partir da abertura (RN06); a tela HorariosQuadra só oferece minutos `00` no `TimePicker`.
+Dia sem linha = fechado (RN19). Abertura e fechamento em hora cheia são exigidos porque os slots são de 60 min a partir da abertura (RN06); a tela HorariosQuadra só aceita minutos `00` (o `showTimePicker` do Flutter não restringe os minutos, então a linha valida a hora cheia antes de chamar a API).
 
 ### 2.4 `reserva`
 
@@ -251,7 +251,7 @@ erDiagram
 
 ## 4. Enums e como são persistidos
 
-Todos os enums são Java `enum` no pacote `br.com.somaisuma.entity` (espelhados em Kotlin em `model/` no app), gravados como texto com `@Enumerated(EnumType.STRING)` e protegidos por `CHECK` no banco. Ordinal foi descartado: reordenar o enum corromperia dados silenciosamente.
+Todos os enums são Java `enum` no pacote `br.com.somaisuma.entity` (espelhados em Dart em `lib/model/enums.dart` no app), gravados como texto com `@Enumerated(EnumType.STRING)` e protegidos por `CHECK` no banco. Ordinal foi descartado: reordenar o enum corromperia dados silenciosamente.
 
 | Enum | Valores | Onde é persistido | Regras associadas |
 |---|---|---|---|
@@ -264,7 +264,7 @@ Todos os enums são Java `enum` no pacote `br.com.somaisuma.entity` (espelhados 
 | `StatusSlot` | LIVRE, OCUPADO, PASSADO, FECHADO | **não persistido** — só no `SlotResponse` | RF12; calculado a cada `GET /quadras/{id}/slots` |
 | `dia_semana` | 1..7 | `horario_funcionamento.dia_semana SMALLINT` | Não é enum próprio: usa `DayOfWeek.getValue()` direto |
 
-Adicionar um valor a um enum (por exemplo, um novo esporte) exige migration aditiva que recria a `CHECK` (`ALTER TABLE quadra DROP CONSTRAINT ck_quadra_tipo_esporte; ALTER TABLE quadra ADD CONSTRAINT ... CHECK (...)`), além do enum Java e Kotlin. É o único custo de ter usado enum em vez de tabela, e é aceitável para uma lista que não muda no semestre.
+Adicionar um valor a um enum (por exemplo, um novo esporte) exige migration aditiva que recria a `CHECK` (`ALTER TABLE quadra DROP CONSTRAINT ck_quadra_tipo_esporte; ALTER TABLE quadra ADD CONSTRAINT ... CHECK (...)`), além do enum Java e Dart. É o único custo de ter usado enum em vez de tabela, e é aceitável para uma lista que não muda no semestre.
 
 ### Máquinas de estado no banco
 
@@ -563,7 +563,7 @@ Consequências: sem paginação nas listagens (RNF09 documenta a limitação), s
 | Índices grandes com `CONCURRENTLY` | Não se aplica no MVP (tabelas pequenas); registrado para o futuro | opcional |
 | Revisão DER x banco real | Integrante B compara este documento com `\d+` no PostgreSQL em S12 (16–20/11) e ajusta o documento, nunca o V1 | recomendado |
 
-O cache local do Android (`quadra_cache`, `reserva_cache` no Room) não é versão deste esquema: é uma projeção dos DTOs de resposta e segue regras próprias (`fallbackToDestructiveMigration`), descritas em docs/12-persistencia-local.md.
+O cache local do app (`quadra_cache`, `reserva_cache` no drift, arquivo `somaisuma.sqlite`) não é versão deste esquema: é uma projeção dos DTOs de resposta e segue regras próprias (`schemaVersion` + recriação destrutiva das tabelas no `onUpgrade`, sem migrations escritas), descritas em docs/12-persistencia-local.md.
 
 ## 9. O que não é armazenado (RNF02, RN05)
 
