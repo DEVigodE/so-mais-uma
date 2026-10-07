@@ -1,0 +1,356 @@
+<!DOCTYPE html><html lang="pt-BR" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_stack" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed": "#251a00", "tertiary": "#755800", "error": "#ba1a1a", "surface-container-highest": "#e0e3e5", "tertiary-fixed": "#ffdf9a", "primary-container": "#00873a", "secondary-container": "#dae2fd", "on-secondary-container": "#5c647a", "on-primary-fixed-variant": "#005320", "primary-fixed": "#7ffc97", "on-secondary-fixed-variant": "#3f465c", "surface-container-lowest": "#ffffff", "inverse-surface": "#2d3133", "surface-tint": "#006e2d", "surface-bright": "#f7f9fb", "tertiary-container": "#936f00", "on-primary-container": "#f7fff2", "on-error": "#ffffff", "tertiary-fixed-dim": "#f7be1d", "on-error-container": "#93000a", "on-secondary": "#ffffff", "surface-container-low": "#f2f4f6", "secondary-fixed": "#dae2fd", "surface": "#f7f9fb", "outline-variant": "#bdcaba", "background": "#f7f9fb", "error-container": "#ffdad6", "on-tertiary-fixed-variant": "#5a4300", "secondary": "#565e74", "outline": "#6e7b6c", "surface-dim": "#d8dadc", "on-primary-fixed": "#002109", "inverse-on-surface": "#eff1f3", "primary": "#006b2c", "surface-container-high": "#e6e8ea", "on-secondary-fixed": "#131b2e", "on-surface": "#191c1e", "on-surface-variant": "#3e4a3d", "secondary-fixed-dim": "#bec6e0", "primary-fixed-dim": "#62df7d", "on-primary": "#ffffff", "on-tertiary-container": "#fffbff", "inverse-primary": "#62df7d", "on-background": "#191c1e", "surface-container": "#eceef0", "surface-variant": "#e0e3e5", "on-tertiary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "gutter": "1rem", "space-md": "1rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "margin": "1rem" }, "fontFamily": { "headline-md": ["Inter"], "label-sm": ["Inter"], "body-md": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "headline-lg": ["Inter"], "title-sm": ["Inter"], "title-lg": ["Inter"], "display-lg-mobile": ["Inter"], "body-sm": ["Inter"], "title-md": ["Inter"], "display-lg": ["Inter"], "label-md": ["Inter"], "label-lg": ["Inter"] }, "fontSize": { "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "700" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "title-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "display-lg": ["40px", { "lineHeight": "48px", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0"><button aria-label="Voltar" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><img src="https://lh3.googleusercontent.com/aida/AEtjO1WkqRaceyu3JyGeO60LRdFUphnfTdESGoIPLTNpOHk89X7Q060p0isEfzIax4Xhq0ZEZO_bVXBITyp2cwJOWlvbBZva1338umZPN8sPpKzEHLMQ6mf-LpldsFI7BHJqKV4N_RQD_GfxN6pp7OgnGo5hxEnXclhQybfte7xsEImFhGN6hDWtosCHTfqKR1-UOaBwDVdKQ6GwmRMkn_7dT3fzy5xWHOzuUxabtXURA-e9qHRCNyeCEjWmXw" alt="Só mais uma" class="w-8 h-8 rounded-lg object-contain"><h1 class="font-title-lg text-title-lg text-on-surface truncate">Detalhe Da Reserva</h1></div><div class="flex items-center"><button aria-label="Perfil" class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors"><img alt="Perfil" class="w-8 h-8 rounded-full object-cover border border-emerald-100" src="https://lh3.googleusercontent.com/aida/AEtjO1XvxsfkF_kHSL_Qo8H4sQMaqS-fhDpXfxeIqGuHV22rOqtGWuHOQm43qdQrpKO2dcDU63VQto9ICXq9WgPQrRBZq1UJ0Bgl-T4Y5sJLjHG-gDq_U_pPXZ0YQyvACd0MYemDkSiEQ7WmwWNCHBojYVTgavU9QSPRF8d9PZqR-SpmLguhTUht-NaKuByQRVk3Dy70gSkPEGY_irDVYb9giM5VURvY5h9n3am299jxKS_OWQ8NFFDvwEbyDXU"></button></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-10">
+<div class="px-gutter pt-space-md flex flex-col gap-space-lg">
+<!-- Top Meta Strip: Status, Sync & Reservation Code -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="">Confirmada</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="">Sincronizado há 2 min</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-space-xs p-space-sm rounded-lg bg-surface-container-low shadow-sm">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Código da Reserva</span>
+<span class="font-title-md text-title-md text-on-surface tracking-wider font-mono">#RES-2026-8942</span>
+</div>
+<button aria-label="Copiar código da reserva" class="min-h-[48px] px-3 flex items-center gap-1.5 rounded-lg bg-surface-container-highest text-on-surface active:bg-surface-container font-label-md text-label-md transition-colors" id="btn-copy-code" type="button">
+<span class="material-symbols-outlined text-[18px]" id="icon-copy-code">content_copy</span>
+<span id="text-copy-code" class="">Copiar</span>
+</button>
+</div>
+</div>
+<!-- Quadra & Match Summary Bento Card -->
+<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-md flex flex-col gap-space-md">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex flex-col min-w-0">
+<span class="inline-flex items-center gap-1 font-label-md text-label-md text-primary mb-1">
+<span class="material-symbols-outlined text-[16px]">sports_soccer</span>
+            Futebol Society • Quadra 1 (Coberta)
+          </span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-tight">Arena Champions Society</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container font-label-sm text-label-sm whitespace-nowrap self-start">Society</span>
+</div>
+<!-- High-aspect arena visual badge -->
+<div class="relative w-full h-40 rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Vibrant modern synthetic grass indoor society soccer court, floodlit arena with white line markings, emerald green pitch, goals with clean netting, dusk lighting, professional athletic vibe" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDgL6Sf3EKAHNX4WOdmoY-w9icFmP_DfB57ZYCEc3YRFFkhOMcBIg5V2pWkgEOh94i9MIu6SY0mcRjOSRpnl5jm29mVtbETWngQU_lkhDRPRXjGppimib_B-oJnfs4E1rdWuZwPxb6bw7Lfynhe8zkutNechx0IWHmePKKqz2WtPgxebqXN3Nfn8HaXaXd9xOLx2sx642Sh2goFY2E8dJf3-g7bCeXHoJPP-c4VQglKOgocsYVu_24">
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-transparent flex items-end p-3">
+<span class="font-label-sm text-label-sm text-surface-bright flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+            Quadra Oficial 7x7 Homologada
+          </span>
+</div>
+</div>
+<!-- Schedule Block -->
+<div class="grid grid-cols-1 gap-2 p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">event</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Data do Jogo</span>
+<span class="font-title-sm text-title-sm text-on-surface">Sábado, 26 de Outubro de 2026</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">schedule</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Horário Reservado</span>
+<span class="font-title-md text-title-md text-primary font-bold">19:00 - 20:00 (60 minutos)</span>
+</div>
+</div>
+</div>
+<!-- Complete Location & Directions -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] mt-0.5">location_on</span>
+<p class="font-body-md text-body-md text-on-surface">
+            Av. das Nações Unidas, 1420 - Pinheiros, São Paulo - SP
+          </p>
+</div>
+<div class="w-full h-32 rounded-lg overflow-hidden mt-1" data-location="Av. das Nações Unidas, 1420 - Pinheiros, São Paulo - SP" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBV6cNWC_nzG23W2RDRcx9CfeqWnv9a6-UmA_b9HFgwQVCdGsoNzcA4DcT5TSgMKovy0DSS5qxGHXS-HFSqXbeXPRnuMkeduEZTpRlyxv9e-U2LPCpMZaaP51W4M6e8On4dnyYrTcJyxfoMmZyEgrojhGjvo9Wd-YoB_uOHmV-9gTuuYte90IdFInWIX4rcTZS-6JT0SHaowobOz5YxS4kwTndVlkN1UnS7kn1Fv8LqHnREhOqAYhEd')"></div>
+</div>
+<!-- Action Buttons Row -->
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="min-h-[48px] px-3 rounded-lg bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 active:bg-surface-container-highest transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">directions</span>
+<span class="">Como chegar</span>
+</button>
+<button class="min-h-[48px] px-3 rounded-lg bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 active:bg-surface-container-highest transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+<span class="">Contatar Arena</span>
+</button>
+</div>
+</div>
+<!-- Detalhes do Pagamento (Pix liquidado) -->
+<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface">Informações do Pagamento</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm">Liquidado</span>
+</div>
+<div class="flex flex-col gap-3 divide-y-0">
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[24px]">qr_code_2</span>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-semibold">Pix</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">24/10/2026 às 19:34</span>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">R$ 90,00</span>
+</div>
+<div class="flex flex-col gap-1 px-1">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">ID da Transação (TxID)</span>
+<button class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary hover:underline" id="btn-copy-txid" type="button">
+<span id="text-copy-txid" class="">Copiar</span>
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+</button>
+</div>
+<span class="font-mono text-body-sm text-on-surface break-all bg-surface-container p-2 rounded-md">
+            E0041699202610241934s01923992
+          </span>
+</div>
+<div class="inline-flex items-center gap-2 text-primary font-label-sm text-label-sm px-1 pt-1">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="">Aprovado pelo Banco Central • Liquidação instantânea</span>
+</div>
+</div>
+</div>
+<!-- Observações da Reserva (RF16 - editável inline) -->
+<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface">Observações para a quadra</h3>
+<button class="min-h-[48px] px-3 font-label-md text-label-md text-primary flex items-center gap-1 hover:bg-surface-container rounded-lg transition-colors" id="btn-edit-note" type="button">
+<span class="material-symbols-outlined text-[18px]" id="icon-edit-note">edit</span>
+<span id="label-edit-note" class="">Editar</span>
+</button>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+        O dono da arena lerá estas instruções antes da partida.
+      </p>
+<!-- View Mode -->
+<div class="p-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md" id="view-mode-note">
+        "Por favor, deixar separados 2 jogos de coletes (vermelho e azul) e bola oficial de society calibrada."
+      </div>
+<!-- Edit Mode (Hidden by default) -->
+<div class="hidden flex flex-col gap-2" id="edit-mode-note">
+<label class="sr-only" for="input-note">Instruções para o responsável</label>
+<textarea class="w-full p-space-sm rounded-lg bg-surface-container-highest text-on-surface font-body-md text-body-md focus:outline-none focus:bg-surface-container-low transition-colors" id="input-note" maxlength="200" rows="3">Por favor, deixar separados 2 jogos de coletes (vermelho e azul) e bola oficial de society calibrada.</textarea>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="char-count">98/200</span>
+<div class="flex items-center gap-2">
+<button class="min-h-[48px] px-3 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" id="btn-cancel-note" type="button">
+              Cancelar
+            </button>
+<button class="min-h-[48px] px-4 rounded-lg bg-primary text-on-primary font-label-md text-label-md" id="btn-save-note" type="button">
+              Salvar alteração
+            </button>
+</div>
+</div>
+</div>
+<!-- Feedback Toast Banner inline -->
+<div class="hidden items-center gap-1.5 text-primary font-label-sm text-label-sm" id="note-saved-badge">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span class="">Observação atualizada com sucesso!</span>
+</div>
+</div>
+<!-- Regras de Cancelamento & Estorno (RN13, RN14, RN15) -->
+<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-primary text-[22px]">policy</span>
+<h3 class="font-title-md text-title-md">Política de Cancelamento (RN13)</h3>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">alarm_on</span>
+<span class="">Dentro do prazo de cancelamento (Faltam 46 horas)</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-2">
+<p class="font-body-md text-body-md text-on-surface">
+          Cancelamento gratuito e integral disponível até <strong>2 horas antes</strong> do início da partida (até 26/10 às 17:00).
+        </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-start gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">info</span>
+<span class=""><strong>Regra RN14:</strong> Conforme regulamento, para reservas confirmadas o estorno financeiro é alinhado diretamente com o gestor da arena em caso de cancelamento aprovado.</span>
+</p>
+</div>
+</div>
+<!-- Download/Receipt Receipt Action -->
+<button class="min-h-[48px] w-full p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-between text-on-surface transition-colors" type="button">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</div>
+<div class="flex flex-col text-left">
+<span class="font-title-sm text-title-sm">Baixar comprovante da reserva (PDF)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Recibo fiscal e dados do jogo</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+</button>
+<!-- Rodapé: Ações de Cancelamento e Retorno -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<button class="min-h-[48px] w-full rounded-xl bg-error-container text-on-error-container font-label-lg text-label-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity" id="btn-trigger-cancel" type="button">
+<span class="material-symbols-outlined text-[20px]">cancel</span>
+<span class="">Cancelar Reserva</span>
+</button>
+<button class="min-h-[48px] w-full rounded-xl bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors" onclick="history.back()" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+<span class="">Voltar para Minhas Reservas</span>
+</button>
+</div>
+</div>
+<!-- Modal / Dialog de Cancelamento (RN13 / RN15 / RF17) -->
+<div class="fixed inset-0 z-50 hidden bg-inverse-surface/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-gutter" id="cancel-modal">
+<div class="w-full max-w-sm rounded-2xl bg-surface-container-lowest p-space-lg shadow-xl flex flex-col gap-space-md">
+<div class="w-12 h-12 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px]">warning</span>
+</div>
+<div class="flex flex-col gap-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Deseja realmente cancelar?</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          O horário de Sábado (19:00 - 20:00) será liberado imediatamente para outros atletas.
+        </p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+        Você está dentro da janela de cancelamento gratuito (&gt; 2h antes). O contato para estorno será encaminhado via gestão da arena.
+      </div>
+<div class="flex flex-col gap-2 pt-2">
+<button class="min-h-[48px] w-full rounded-xl bg-error text-on-error font-label-lg text-label-lg flex items-center justify-center" id="btn-confirm-cancel" type="button">
+          Sim, confirmar cancelamento
+        </button>
+<button class="min-h-[48px] w-full rounded-xl bg-surface-container-high text-on-surface font-label-lg text-label-lg flex items-center justify-center" id="btn-dismiss-modal" type="button">
+          Manter reserva
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Copy Reservation Code micro-interaction
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const textCopyCode = document.getElementById('text-copy-code');
+    const iconCopyCode = document.getElementById('icon-copy-code');
+
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener('click', function() {
+        navigator.clipboard?.writeText('RES-2026-8942');
+        textCopyCode.textContent = 'Copiado!';
+        iconCopyCode.textContent = 'check';
+        setTimeout(function() {
+          textCopyCode.textContent = 'Copiar';
+          iconCopyCode.textContent = 'content_copy';
+        }, 2200);
+      });
+    }
+
+    // Copy TxID micro-interaction
+    const btnCopyTxid = document.getElementById('btn-copy-txid');
+    const textCopyTxid = document.getElementById('text-copy-txid');
+    if (btnCopyTxid) {
+      btnCopyTxid.addEventListener('click', function() {
+        navigator.clipboard?.writeText('E0041699202610241934s01923992');
+        textCopyTxid.textContent = 'Copiado!';
+        setTimeout(function() {
+          textCopyTxid.textContent = 'Copiar';
+        }, 2000);
+      });
+    }
+
+    // Inline Observation edit behavior (RF16)
+    const btnEditNote = document.getElementById('btn-edit-note');
+    const viewMode = document.getElementById('view-mode-note');
+    const editMode = document.getElementById('edit-mode-note');
+    const inputNote = document.getElementById('input-note');
+    const charCount = document.getElementById('char-count');
+    const btnSaveNote = document.getElementById('btn-save-note');
+    const btnCancelNote = document.getElementById('btn-cancel-note');
+    const savedBadge = document.getElementById('note-saved-badge');
+
+    function toggleEdit(isEditing) {
+      if (isEditing) {
+        viewMode.classList.add('hidden');
+        editMode.classList.remove('hidden');
+        btnEditNote.classList.add('hidden');
+        inputNote.focus();
+      } else {
+        viewMode.classList.remove('hidden');
+        editMode.classList.add('hidden');
+        btnEditNote.classList.remove('hidden');
+      }
+    }
+
+    if (btnEditNote && inputNote) {
+      btnEditNote.addEventListener('click', function() {
+        toggleEdit(true);
+      });
+
+      inputNote.addEventListener('input', function() {
+        charCount.textContent = inputNote.value.length + '/200';
+      });
+
+      btnCancelNote.addEventListener('click', function() {
+        inputNote.value = viewMode.textContent.replace(/^"|"$/g, '').trim();
+        charCount.textContent = inputNote.value.length + '/200';
+        toggleEdit(false);
+      });
+
+      btnSaveNote.addEventListener('click', function() {
+        const val = inputNote.value.trim();
+        viewMode.textContent = '"' + val + '"';
+        toggleEdit(false);
+        savedBadge.classList.remove('hidden');
+        savedBadge.classList.add('flex');
+        setTimeout(function() {
+          savedBadge.classList.add('hidden');
+          savedBadge.classList.remove('flex');
+        }, 3000);
+      });
+    }
+
+    // Cancellation modal logic (RN13 / RN15 / RF17)
+    const btnTriggerCancel = document.getElementById('btn-trigger-cancel');
+    const modal = document.getElementById('cancel-modal');
+    const btnDismiss = document.getElementById('btn-dismiss-modal');
+    const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
+
+    if (btnTriggerCancel && modal) {
+      btnTriggerCancel.addEventListener('click', function() {
+        modal.classList.remove('hidden');
+      });
+
+      btnDismiss.addEventListener('click', function() {
+        modal.classList.add('hidden');
+      });
+
+      btnConfirmCancel.addEventListener('click', function() {
+        btnConfirmCancel.textContent = 'Processando...';
+        btnConfirmCancel.disabled = true;
+        setTimeout(function() {
+          modal.classList.add('hidden');
+          alert('Sua reserva foi cancelada com sucesso. O horário foi liberado.');
+          window.location.reload();
+        }, 1200);
+      });
+    }
+  })();
+</script></main>
+
+
+
+</body></html>
