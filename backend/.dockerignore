@@ -1,0 +1,17 @@
+target/
+.idea/
+.vscode/
+*.iml
+.env
+*.crt
+*.key
+*.pem
+*.pfx
+*.p12
+*.jks
+*.keystore
+openspec/
+.agents/
+.claude/
+scripts/
+compose.yaml

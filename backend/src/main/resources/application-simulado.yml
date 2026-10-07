@@ -1,0 +1,22 @@
+# Ambiente padrão: PixGateway simulado, endpoint de simulação ligado, sem webhook
+# nem job de consulta, documentação ligada.
+app:
+  jwt:
+    # Segredo apenas para desenvolvimento local; em qualquer ambiente publicado use JWT_SECRET.
+    secret: ${JWT_SECRET:dev-somente-local-troque-em-producao-0123456789}
+  dev:
+    endpoint-simulacao: true
+    key: ${DEV_KEY:dev-key-local}
+  pix:
+    webhook-habilitado: false
+    consulta-habilitada: false
+    simulado:
+      chave: ${SIMULADO_PIX_CHAVE:chave-pix-ficticia@somaisuma.local}
+      nome: ${SIMULADO_PIX_NOME:SO MAIS UMA}
+      cidade: ${SIMULADO_PIX_CIDADE:BELO HORIZONTE}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

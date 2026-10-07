@@ -15,7 +15,7 @@ flowchart TB
 
 | Nível | Ferramenta | Onde | Quando roda | Responsável |
 |---|---|---|---|---|
-| Unitário backend (por service) | JUnit 5 + Mockito (`@MockitoBean` só nos slice tests) | `backend/src/test/java/br/com/somaisuma/service/*Test.java` | todo PR (CI) | dono da fatia |
+| Unitário backend (por service) | JUnit 5 + Mockito (`@MockitoBean` só nos slice tests) | `backend/src/test/java/br/com/puc/so_mais_uma/service/*Test.java` | todo PR (CI) | dono da fatia |
 | Controller | `@WebMvcTest` + `MockMvc` + `spring-boot-starter-webmvc-test`; segurança real (`SecurityConfig` importada) | `backend/src/test/java/.../controller/*Test.java` | todo PR (CI) | A (auth), B (quadra), C (reserva), D (pagamento/webhook) |
 | Integração | `@SpringBootTest` + `@ServiceConnection` `PostgreSQLContainer` (Testcontainers 2.x, imagem `postgres:18-alpine`), Flyway real, profile `simulado` | `backend/src/test/java/.../*IT.java` | todo PR (CI, Docker do runner) | C (`ReservaConcorrenciaIT`), B (`FlywayMigracaoIT`) |
 | ViewModel Android | JUnit 5 + `kotlinx-coroutines-test` + `FakeApiService` + `FakeQuadraDao`/`FakeReservaDao` em memória + `FakeSessaoDataStore` | `android/app/src/test/kotlin/.../ui/**/*ViewModelTest.kt` | todo PR (CI, JVM, sem emulador) | dono da tela |
@@ -78,7 +78,7 @@ Mutirão de testes da S10 (bug bash): **8 horas somadas, sendo 2 horas por integ
 | CT-16 | Grade de slots | DetalheQuadra > data de amanhã; data de hoje; data hoje+15 via Swagger | slots de 60 min entre abertura e fechamento; slot da reserva CONFIRMADA = OCUPADO; horas já passadas de hoje = PASSADO; dia sem funcionamento = lista só FECHADO; hoje+15 -> 422 `DATA_FORA_DA_JANELA` e seletor do app não oferece a data | RF12, RN09 | Auto (`SlotServiceTest`) + Manual | C |
 | CT-17 | Fuso horário único | `POST /reservas` com `inicio=2026-11-20T22:00:00Z` (= 19:00 em São Paulo) e com `2026-11-20T19:00:00-03:00`; depois com `19:30:00-03:00` | as duas primeiras caem no mesmo slot (a 2ª recebe 409); 19:30 -> 400 `VALIDACAO` (hora cheia); `ReservaResponse.inicio` sempre com offset `-03:00` | RN06, RNF12 | Auto (`SlotServiceTest`) + Manual | C |
 | CT-18 | Criar reserva com cobrança | ConfirmarReserva > Confirmar; conferir `pagamento` na resposta e no banco | 201 com `status=PENDENTE_PAGAMENTO`, `valor` = `preco_hora`, `expiraEm` = criado + 15 min; `pagamento{txid 32 chars, pixCopiaECola, status PENDENTE}`; QR renderiza e app de banco decodifica o payload (CRC16 válido); "Copiar código" copia o texto | RF13, RF19, RN07, RN10 | Auto (`ReservaServiceTest`, `PixPayloadBuilderTest`) + Manual | C / D |
-| CT-19 | Corrida de 10 threads | `./gradlew test --tests '*ReservaConcorrenciaIT'`; na demo: 2 celulares tocam o mesmo slot livre quase ao mesmo tempo | IT: 1 x 201, 9 x 409, `count(*)` ativo = 1; celulares: um vai para Pagamento, o outro recebe snackbar "Esse horário acabou de ser reservado" e a grade recarrega com o slot OCUPADO | RN08 | Auto (`ReservaConcorrenciaIT`) + Manual | C |
+| CT-19 | Corrida de 10 threads | `./mvnw verify -Dtest=NONE -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=ReservaConcorrenciaIT`; na demo: 2 celulares tocam o mesmo slot livre quase ao mesmo tempo | IT: 1 x 201, 9 x 409, `count(*)` ativo = 1; celulares: um vai para Pagamento, o outro recebe snackbar "Esse horário acabou de ser reservado" e a grade recarrega com o slot OCUPADO | RN08 | Auto (`ReservaConcorrenciaIT`) + Manual | C |
 | CT-20 | Uma pendente por cliente | com reserva PENDENTE aberta, tentar reservar outro slot | 422 `RESERVA_PENDENTE_EXISTENTE`; app leva ao DetalheReserva da pendente com botão "Pagar agora" | RN11 | Auto (`ReservaServiceTest`, `ConfirmarReservaViewModelTest`) + Manual | C |
 | CT-21 | Fora da janela ou do funcionamento | Swagger: `inicio` no passado; fora do horário de funcionamento; quadra inativa; quadra inexistente | 400 (`@Future`); 422 `FORA_DO_FUNCIONAMENTO`; 404 `NAO_ENCONTRADO` nos dois últimos | RN09 | Auto + Manual | C |
 | CT-22 | Expiração em 15 min | criar reserva; `UPDATE reserva SET expira_em = now() - interval '1 minute' WHERE id=?` (e o mesmo em `pagamento`); aguardar até 60 s | reserva EXPIRADA, pagamento EXPIRADO; slot volta a LIVRE; tela Pagamento mostra "Expirado" e para o polling; reserva aparece no Histórico | RF14, RN10 | Auto (`ReservaServiceTest`) + Manual | C |
@@ -96,17 +96,16 @@ Cobertura por requisito: todos os RF01..RF24 e as RN01..RN20 aparecem em ao meno
 
 ## 4. Como rodar
 
-Backend (JDK 21, Docker Desktop ligado para os `*IT`):
+Backend (JDK 25, Docker Desktop ligado para os testes com Testcontainers):
 
 ```bash
 cd backend
-./gradlew test                                   # unitários + @WebMvcTest + *IT (Testcontainers sobe postgres:18-alpine)
-./gradlew test --tests '*ReservaConcorrenciaIT'  # só a corrida de 10 threads (mostrar na apresentação)
-./gradlew test --tests 'br.com.somaisuma.service.*'   # só unitários de service, sem Docker
-./gradlew test --tests '*Test'                   # se o Docker não estiver disponível (o padrão de nome deixa os *IT de fora)
+./mvnw verify                                    # tudo: Surefire (*Test) + Failsafe (*IT); Testcontainers sobe postgres:18-alpine
+./mvnw verify -Dtest=NONE -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=ReservaConcorrenciaIT   # só a corrida de 10 threads
+./mvnw test -Dtest='SlotServiceTest,ReservaServiceTest,AuthServiceTest,*ControllerTest,*ClientTest,*GatewayTest,*BuilderTest'   # sem Docker
 ```
 
-O relatório HTML fica em `backend/build/reports/tests/test/index.html`. Variáveis mínimas nos testes: `JWT_SECRET` (definido em `src/test/resources/application-test.yml` com um valor fixo de 32 bytes), profile `simulado` forçado por `@ActiveProfiles("simulado")`.
+Os relatórios ficam em `backend/target/surefire-reports/` e `backend/target/failsafe-reports/`. Alguns `*ServiceTest` (`QuadraServiceTest`, `HorarioFuncionamentoServiceTest`, `PagamentoServiceTest`, `ReservaFacadeTest`) rodam contra o PostgreSQL do Testcontainers, porque as regras que verificam são consultas SQL e restrições do banco; por isso o último comando lista explicitamente os que não precisam de Docker. Variáveis mínimas nos testes: nenhuma — o profile `simulado` (forçado por `@ActiveProfiles("simulado")` nos testes de integração) já traz um `JWT_SECRET` de desenvolvimento com mais de 32 bytes.
 
 Android (sem emulador):
 
@@ -126,7 +125,7 @@ Testes manuais: executar a planilha `docs/anexos/execucao-ct-<data>.csv` com Swa
 | Job | Runner | Passos | Gate |
 |---|---|---|---|
 | `segredos` | `ubuntu-latest` | varredura do diff em busca de `.crt`, `.key`, `.pfx`, `.env` e de `client_secret`/`JWT_SECRET` com valor real; falha se encontrar | obrigatório para merge em `main` |
-| `backend` | `ubuntu-latest` (Docker disponível para Testcontainers) | `actions/setup-java` Temurin 21 -> `./gradlew build` (compila e roda `*Test` e `*IT`) -> publica `build/reports/tests` como artefato | obrigatório para merge em `main` |
+| `backend` | `ubuntu-latest` (Docker disponível para Testcontainers) | `actions/setup-java` Temurin 25 -> `./mvnw -B verify` (compila; Surefire roda `*Test`, Failsafe roda `*IT`) -> publica `target/surefire-reports` e `target/failsafe-reports` como artefato | obrigatório para merge em `main` |
 | `android` | `ubuntu-latest` | Temurin 21 -> `./gradlew testDebugUnitTest assembleDebug` -> publica `app-debug.apk` como artefato | obrigatório para merge em `main` |
 
 Gatilhos: `pull_request` e `push` em `main` (também em `release/*`). Os três jobs são os mesmos descritos em docs/21-git-e-organizacao.md e docs/09-arquitetura.md. Meta de duração: < 10 min. Segredos: nenhum (profile `simulado`; `JWT_SECRET` de teste no repositório de testes). Regras de `main`: PR com 1 aprovação do suplente + CI verde; ninguém mergeia o próprio PR (docs/21-git-e-organizacao.md). O CI não roda `androidTest` nem testes contra o sandbox Inter (dependem de emulador e de certificado).

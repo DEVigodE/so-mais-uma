@@ -17,15 +17,14 @@ so-mais-uma/
 │   ├── ISSUE_TEMPLATE/tarefa.md
 │   ├── ISSUE_TEMPLATE/bug.md
 │   └── CODEOWNERS                 # titular + suplente por pasta (recomendado)
-├── backend/                       # Spring Boot 4.1, JDK 21, Gradle Kotlin DSL
-│   ├── build.gradle.kts
-│   ├── settings.gradle.kts
-│   ├── gradlew, gradlew.bat, gradle/
+├── backend/                       # Spring Boot 4.1, JDK 25, Maven
+│   ├── pom.xml
+│   ├── mvnw, mvnw.cmd, .mvn/wrapper/
 │   ├── compose.yaml               # postgres:18-alpine
-│   ├── Dockerfile                 # multi-stage, eclipse-temurin:21-jre
+│   ├── Dockerfile                 # multi-stage, eclipse-temurin:25-jre
 │   ├── .env.exemplo               # nomes das variaveis, sem valores
 │   └── src/
-│       ├── main/java/br/com/somaisuma/
+│       ├── main/java/br/com/puc/so_mais_uma/
 │       │   ├── config/ security/ controller/ service/ repository/
 │       │   ├── entity/ dto/ exception/
 │       │   └── integracao/pix/ integracao/pix/inter/ integracao/cep/
@@ -35,7 +34,7 @@ so-mais-uma/
 │       │   ├── application-inter-sandbox.yml
 │       │   ├── application-inter-prod.yml
 │       │   └── db/migration/V1__init.sql
-│       └── test/java/br/com/somaisuma/
+│       └── test/java/br/com/puc/so_mais_uma/
 ├── android/                       # Kotlin 2.4.10, AGP 9.4, Compose BOM 2026.08.00
 │   ├── build.gradle.kts
 │   ├── settings.gradle.kts
@@ -293,10 +292,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '21' }
-      - uses: gradle/actions/setup-gradle@v4
+        with: { distribution: temurin, java-version: '25', cache: maven }
       - name: Build e testes (Testcontainers usa o Docker do runner)
-        run: ./gradlew build --no-daemon
+        run: chmod +x mvnw && ./mvnw -B verify
         env:
           SPRING_PROFILES_ACTIVE: simulado
           JWT_SECRET: ci-somente-teste-chave-com-mais-de-32-bytes-0123
@@ -413,7 +411,7 @@ Seções obrigatórias, nesta ordem:
 2. Integrantes, fatias e suplentes (tabela de docs/15-divisao-equipe.md resumida).
 3. Stack e tabela de versões fixadas, com a data de verificação (01/09/2026).
 4. Pré-requisitos (JDK 21, Docker, Android Studio Quail 4, `adb`).
-5. Como rodar o backend em 3 comandos (`git clone`, `cd backend`, `./gradlew bootRun`) e o que esperar (`/actuator/health`, Swagger, usuários de seed `cliente@demo.com` e `dono@demo.com` com senha `Senha123`).
+5. Como rodar o backend em 3 comandos (`git clone`, `cd backend`, `./mvnw spring-boot:run`) e o que esperar (`/actuator/health`, Swagger, usuários de seed `cliente@demo.com` e `dono@demo.com` com senha `Senha123`).
 6. Como rodar o app (abrir `android/` no Android Studio, `API_BASE_URL` por build type, `10.0.2.2` no emulador, IP da LAN no celular, `adb install`).
 7. Profiles e variáveis de ambiente (`simulado` padrão; `inter-sandbox` e `inter-prod` com a lista de variáveis do `.env.exemplo`); aviso de que o sandbox funciona só entre 8h e 20h, de segunda a sexta.
 8. Como rodar os testes (`./gradlew test` no backend, `./gradlew testDebugUnitTest` no Android) e o que o `ReservaConcorrenciaIT` prova.
@@ -431,10 +429,10 @@ Critério de aceite do README: um integrante que não escreveu o código clona o
 
 ```text
 # titular + suplente por fatia (ver docs/15-divisao-equipe.md)
-/backend/src/main/java/br/com/somaisuma/security/        @integrante-a @integrante-d
-/backend/src/main/java/br/com/somaisuma/config/          @integrante-a @integrante-d
-/backend/src/main/java/br/com/somaisuma/integracao/pix/  @integrante-d @integrante-a
-/backend/src/main/java/br/com/somaisuma/integracao/cep/  @integrante-b @integrante-c
+/backend/src/main/java/br/com/puc/so_mais_uma/security/        @integrante-a @integrante-d
+/backend/src/main/java/br/com/puc/so_mais_uma/config/          @integrante-a @integrante-d
+/backend/src/main/java/br/com/puc/so_mais_uma/integracao/pix/  @integrante-d @integrante-a
+/backend/src/main/java/br/com/puc/so_mais_uma/integracao/cep/  @integrante-b @integrante-c
 /backend/src/main/resources/db/migration/                @integrante-b @integrante-c
 /android/app/src/main/java/br/com/somaisuma/app/ui/auth/       @integrante-a @integrante-d
 /android/app/src/main/java/br/com/somaisuma/app/ui/quadras/    @integrante-b @integrante-c
