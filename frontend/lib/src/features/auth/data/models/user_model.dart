@@ -27,7 +27,7 @@ class UserModel {
         UserModel(
           id: id?.toString() ?? '',
           email: email?.toString() ?? '',
-          name: source['name']?.toString(),
+          name: source['nome']?.toString(),
           photoUrl: source['photoUrl']?.toString(),
         ),
       _ => const UserModel(id: '', email: ''),
