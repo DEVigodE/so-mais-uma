@@ -13,12 +13,14 @@ class LocalizationWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return EasyLocalization(
       supportedLocales: const [
-        Locale('pt'),
+        Locale('pt', 'BR'),
         Locale('en'),
         Locale('es'),
       ],
       path: 'assets/translations',
-      fallbackLocale: const Locale('pt'),
+      // Always start in pt-BR, regardless of the device language.
+      startLocale: const Locale('pt', 'BR'),
+      fallbackLocale: const Locale('pt', 'BR'),
       child: child,
     );
   }

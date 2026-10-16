@@ -29,6 +29,7 @@
     "login_button": "Login",
     "dont_have_account": "Don't have an account? ",
     "sign_up": "Sign Up",
+    "sign_up_subtitle": "Fill in your details to create your account.",
     "create_account": "Create Account",
     "create_account_subtitle": "Create a new account to get started.",
     "name": "Name",
@@ -42,6 +43,7 @@
     "or_continue_with": "Or Continue With Account",
     "forgot_password_title": "Forgot Password",
     "forgot_password_subtitle": "Enter your email address to receive a reset link\nand regain access to your account.",
-    "reset_link_sent": "Password reset link sent to your email."
+    "reset_link_sent": "Password reset link sent to your email.",
+    "back_to_login": "Back to login"
   }
 }
