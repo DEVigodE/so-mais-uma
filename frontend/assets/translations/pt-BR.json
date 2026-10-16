@@ -1,0 +1,49 @@
+{
+  "shared": {
+    "get_started": "Começar"
+  },
+  "onboarding": {
+    "onboarding_title_1": "Sua jornada,\nperfeitamente planejada",
+    "onboarding_subtitle_1": "Crie e organize as viagens dos seus sonhos\nsem esforço. Comece a explorar agora!",
+    "onboarding_title_2": "Descubra\namigos por perto",
+    "onboarding_subtitle_2": "Veja para onde seus amigos estão viajando e\nexplore o mundo junto com eles.",
+    "onboarding_title_3": "Fique por dentro\ndos melhores lugares",
+    "onboarding_subtitle_3": "Encontre destinos em alta e atrações imperdíveis,\ntudo pensado para melhorar seus planos de viagem."
+  },
+  "home": {
+    "home_title": "Início",
+    "welcome_home": "Bem-vindo!",
+    "home_subtitle": "Você concluiu a apresentação do app."
+  },
+  "auth": {
+    "log_in": "Entrar",
+    "log_in_subtitle": "Informe seu e-mail e senha",
+    "email": "E-mail",
+    "email_required": "Informe o e-mail",
+    "email_invalid": "Informe um e-mail válido",
+    "password": "Senha",
+    "password_required": "Informe a senha",
+    "password_too_short": "A senha deve ter pelo menos 6 caracteres",
+    "remember_me": "Lembrar de mim",
+    "forgot_password": "Esqueci minha senha",
+    "login_button": "Entrar",
+    "dont_have_account": "Não tem uma conta? ",
+    "sign_up": "Cadastre-se",
+    "sign_up_subtitle": "Preencha seus dados para criar sua conta.",
+    "create_account": "Criar conta",
+    "create_account_subtitle": "Crie uma conta para começar.",
+    "name": "Nome",
+    "name_required": "Informe o nome",
+    "confirm_password": "Confirmar senha",
+    "confirm_password_required": "Confirme a senha",
+    "passwords_do_not_match": "As senhas não coincidem",
+    "create_account_button": "Criar conta",
+    "already_have_account": "Já tem uma conta? ",
+    "sign_in": "Entrar",
+    "or_continue_with": "Ou continue com",
+    "forgot_password_title": "Esqueci minha senha",
+    "forgot_password_subtitle": "Informe seu e-mail para receber um link de redefinição\ne recuperar o acesso à sua conta.",
+    "reset_link_sent": "Enviamos o link de redefinição para o seu e-mail.",
+    "back_to_login": "Voltar para o login"
+  }
+}
