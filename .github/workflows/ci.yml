@@ -55,6 +55,8 @@ jobs:
         if: hashFiles('frontend/pubspec.yaml') != ''
         working-directory: frontend
         run: |
+          # O pubspec declara .env como asset (flutter_dotenv); o arquivo real nunca é versionado.
+          cp .env.exemplo .env
           flutter pub get
           flutter analyze
           flutter test
