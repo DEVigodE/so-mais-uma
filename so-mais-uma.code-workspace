@@ -3,15 +3,7 @@
 		{
 			"name": "Só Mais Uma",
 			"path": "../../../../dev/projects/so-mais-uma"
-		},
-		// {
-		// 	"name": "Backend",
-		// 	"path": "../../../../dev/projects/so-mais-uma/backend"
-		// },
-		// {
-		// 	"name": "Frontend",
-		// 	"path": "../../../../dev/projects/so-mais-uma/frontend"
-		// },
+		}
 	],
 	"settings": {
 		"editor.fontFamily": "JetBrainsMono Nerd Font",

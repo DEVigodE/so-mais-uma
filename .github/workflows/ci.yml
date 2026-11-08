@@ -51,12 +51,13 @@ jobs:
       - uses: subosito/flutter-action@v2
         if: hashFiles('frontend/pubspec.yaml') != ''
         with: { channel: stable, flutter-version: '3.47.6', cache: true }
-      - name: Dependências, geração de código, análise e testes
+      - name: Dependências, análise e testes
         if: hashFiles('frontend/pubspec.yaml') != ''
         working-directory: frontend
         run: |
+          # O pubspec declara .env como asset (flutter_dotenv); o arquivo real nunca é versionado.
+          cp .env.exemplo .env
           flutter pub get
-          dart run build_runner build --delete-conflicting-outputs
           flutter analyze
           flutter test
       - name: APK debug
