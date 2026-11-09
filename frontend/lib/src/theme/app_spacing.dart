@@ -54,6 +54,11 @@ abstract final class AppSpacing {
   // ── Semantic aliases ──────────────────────────────────────────────────────
 
   /// Standard horizontal page margin.
+  /// Passos 1.5, 2.5 e 3.5 do Tailwind, frequentes nos `code.html`.
+  static double get s6 => 6.r;
+  static double get s10 => 10.r;
+  static double get s14 => 14.r;
+
   static double get pagePadding => md;
 
   /// Gap between list/grid items.

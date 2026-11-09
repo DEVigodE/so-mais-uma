@@ -1,5 +1,5 @@
 import 'package:so_mais_uma/src/utils/utils.dart';
-import 'package:so_mais_uma/src/features/auth/domain/entities/user.dart';
+import 'package:so_mais_uma/src/shared/domain/entities/app_user.dart';
 import 'package:so_mais_uma/src/features/auth/domain/repositories/auth_repository.dart';
 
 /// Record-shaped login credentials.

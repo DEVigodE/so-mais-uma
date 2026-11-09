@@ -5,7 +5,7 @@ import '../../../../../imports/imports.dart';
 /// Usage:
 /// ```dart
 /// AppErrorWidget(
-///   title: 'Something went wrong',
+///   title: 'erros.generico'.tr(),
 ///   message: error.toString(),
 ///   onRetry: () => ref.invalidate(myProvider),
 /// )
@@ -13,13 +13,14 @@ import '../../../../../imports/imports.dart';
 class AppErrorWidget extends StatelessWidget {
   const AppErrorWidget({
     super.key,
-    this.title = 'Something went wrong',
+    this.title,
     this.message,
     this.onRetry,
     this.icon = Icons.error_outline_rounded,
   });
 
-  final String title;
+  /// Padrão: `erros.generico` traduzido.
+  final String? title;
   final String? message;
   final VoidCallback? onRetry;
   final dynamic icon;
@@ -38,7 +39,7 @@ class AppErrorWidget extends StatelessWidget {
             AppIcon(icon: icon, size: 56, color: cs.error),
             const SizedBox(height: 16),
             Text(
-              title,
+              title ?? 'erros.generico'.tr(),
               style: tt.titleMedium?.copyWith(
                 color: cs.onSurface,
                 fontWeight: FontWeight.bold,
@@ -56,7 +57,7 @@ class AppErrorWidget extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: 24),
               AppButton(
-                label: 'Try Again',
+                label: 'comum.tentar_novamente'.tr(),
                 onPressed: onRetry,
                 variant: ButtonVariant.outline,
               ),

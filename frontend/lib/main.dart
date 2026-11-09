@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'src/imports/core_imports.dart';
 import 'src/imports/packages_imports.dart';
 import 'src/app.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 
 Future<void> main() async {
@@ -44,6 +45,7 @@ Future<void> _bootstrap() async {
   AppLogger.info('Application bootstrap started', category: LogCategory.app);
 
   await EasyLocalization.ensureInitialized();
+  await initializeDateFormatting();
   await dotenv.load(fileName: '.env', isOptional: true);
 
   await AppConfig.init();

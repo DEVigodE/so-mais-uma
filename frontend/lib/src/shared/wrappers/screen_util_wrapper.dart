@@ -10,7 +10,7 @@ class ScreenUtilWrapper extends StatelessWidget {
   const ScreenUtilWrapper({
     super.key,
     required this.child,
-    this.designSize = const Size(360, 690),
+    this.designSize = const Size(390, 844),
     this.minTextAdapt = true,
     this.splitScreenMode = true,
   });

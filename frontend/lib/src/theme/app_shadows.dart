@@ -70,4 +70,14 @@ abstract final class AppShadows {
       offset: Offset(0, 4),
     ),
   ];
+
+  /// Barra superior fixa (`shadow-[0_1px_8px_rgba(0,0,0,0.04)]`).
+  static const List<BoxShadow> topBar = [
+    BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 1)),
+  ];
+
+  /// Bottom-nav (`shadow-[0_-2px_12px_rgba(0,0,0,0.05)]`).
+  static const List<BoxShadow> bottomBar = [
+    BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, -2)),
+  ];
 }

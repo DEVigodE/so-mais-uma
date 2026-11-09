@@ -37,16 +37,16 @@ abstract final class AppBorders {
   // ── Semantic aliases ──────────────────────────────────────────────────────
 
   /// Default button border radius.
-  static const BorderRadius button = lg;
+  static const BorderRadius button = md;
 
   /// Default card border radius.
   static const BorderRadius card = md;
 
   /// Default input field border radius.
-  static const BorderRadius input = sm;
+  static const BorderRadius input = md;
 
   /// Default dialog border radius.
-  static const BorderRadius dialog = xl;
+  static const BorderRadius dialog = lg;
 
   // ── RoundedRectangleBorder shapes (for ShapeBorder APIs) ─────────────────
 
