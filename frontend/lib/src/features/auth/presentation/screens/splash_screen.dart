@@ -58,7 +58,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
     return Scaffold(
       backgroundColor: cs.surface,
+      // `expand` dá ao conteúdo a largura da tela; com o `loose` padrão a
+      // Column encolhe até o filho mais largo e fica presa no canto esquerdo.
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Positioned.fill(
             child: IgnorePointer(

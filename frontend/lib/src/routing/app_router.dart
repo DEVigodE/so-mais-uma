@@ -8,6 +8,7 @@ import 'package:so_mais_uma/src/routing/global_navigator.dart';
 import 'package:so_mais_uma/src/routing/redirect.dart';
 import 'package:so_mais_uma/src/routing/router_refresh.dart';
 import 'package:so_mais_uma/src/routing/shell_scaffold.dart';
+import 'package:so_mais_uma/src/shared/domain/enums.dart';
 import 'package:so_mais_uma/src/shared/session/session_store.dart';
 import 'package:so_mais_uma/src/shared/widgets/ui/ui_showcase_screen.dart';
 
@@ -78,7 +79,9 @@ GoRouter _criarRouter() {
       GoRoute(
         path: AppRoutes.signup,
         name: 'signup',
-        builder: (context, state) => const SignupScreen(),
+        builder: (context, state) => SignupScreen(
+          perfil: PerfilUsuario.fromApi(state.uri.queryParameters['perfil']),
+        ),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,

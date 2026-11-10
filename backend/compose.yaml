@@ -1,5 +1,9 @@
 # Banco de desenvolvimento. O suporte a Docker Compose do Spring Boot sobe este
 # serviço automaticamente em `./mvnw spring-boot:run` e configura o datasource.
+#
+# O backend em container é opcional e fica no profile `app`, para não subir junto
+# no `spring-boot:run`:
+#   docker compose --profile app up -d --build
 services:
   postgres:
     image: postgres:18-alpine
@@ -11,6 +15,29 @@ services:
       - "5432:5432"
     volumes:
       - somaisuma-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U somaisuma -d somaisuma"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    profiles: [app]
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # JWT_SECRET, DEV_KEY e SIMULADO_PIX_* vêm do .env (modelo em .env.exemplo).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/somaisuma
+      SPRING_DATASOURCE_USERNAME: somaisuma
+      SPRING_DATASOURCE_PASSWORD: somaisuma
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   somaisuma-pgdata:

@@ -14,8 +14,6 @@ class AuthService {
   /// `UsuarioResponse` da sessão, para reabrir o app sem rede.
   static const _userKey = 'auth_user';
 
-  /// Sign-up always creates CLIENTE accounts; DONO accounts are created directly in the database.
-  static const _signUpProfile = 'CLIENTE';
 
   Dio get _dio => AppConfig.dio;
 
@@ -53,17 +51,19 @@ class AuthService {
     );
   }
 
+  /// `perfil`: `CLIENTE` (padrão) ou `DONO` (atalho do gestor no Login).
   FutureEither<Map<String, dynamic>?> signUp({
     required String name,
     required String email,
     required String password,
+    String perfil = 'CLIENTE',
   }) async {
     return runTask(() async {
       final response = await _dio.post<Map<String, dynamic>>('/auth/registrar', data: {
         'nome': name,
         'email': email,
         'senha': password,
-        'perfil': _signUpProfile,
+        'perfil': perfil,
       });
       return _startSession(response.data!);
     },

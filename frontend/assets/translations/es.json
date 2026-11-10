@@ -658,5 +658,30 @@
     "escolher_outro_horario": "Elegir otro horario / Nueva reserva",
     "erro_sem_conexao": "Conéctate para cargar el código Pix",
     "erro_titulo": "No fue posible cargar el código Pix"
+  },
+  "login": {
+    "titulo": "Accede a tu cuenta",
+    "subtitulo": "Reserva tus partidos o gestiona tus canchas deportivas con agilidad.",
+    "email": "Correo electrónico",
+    "formato_valido": "Formato válido",
+    "email_placeholder": "tu.correo@ejemplo.com",
+    "email_obrigatorio": "Ingresa el correo",
+    "email_invalido": "Ingresa un correo válido",
+    "senha": "Contraseña",
+    "senha_placeholder": "Ingresa tu contraseña",
+    "senha_obrigatoria": "Ingresa la contraseña",
+    "alternar_senha": "Mostrar u ocultar la contraseña",
+    "protecao_titulo": "Protección de Acceso Activa",
+    "protecao_texto": "Conexión cifrada de extremo a extremo con bloqueo temporal tras 5 intentos incorrectos.",
+    "entrar": "Entrar",
+    "credencial_invalida": "Correo o contraseña incorrectos",
+    "bloqueado": "Demasiados intentos. Inténtalo de nuevo en 15 minutos.",
+    "sem_conexao": "Sin conexión. Revisa tu internet e inténtalo de nuevo",
+    "sessao_expirada": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "sem_conta": "¿No tienes una cuenta?",
+    "criar_conta": "Crear cuenta",
+    "ou": "o",
+    "acesso_gestor": "Acceso del Gestor de Cancha",
+    "rodape": "Versión {versao} · Só mais uma"
   }
 }

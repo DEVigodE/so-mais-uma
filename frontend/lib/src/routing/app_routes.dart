@@ -13,6 +13,9 @@ abstract final class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+
+  /// Cadastro com o perfil DONO pré-selecionado ("Acesso do Gestor de Quadra").
+  static const String signupGestor = '/signup?perfil=DONO';
   static const String forgotPassword = '/forgot-password';
 
   // ── CLIENTE ───────────────────────────────────────────────────────────────

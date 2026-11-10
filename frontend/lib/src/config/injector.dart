@@ -2,6 +2,7 @@ import 'package:auto_injector/auto_injector.dart';
 
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
+import '../features/auth/presentation/login/login_store.dart';
 import '../features/auth/presentation/providers/auth_store.dart';
 import '../features/horarios/domain/salvar_horarios_use_case.dart';
 import '../features/horarios/presentation/horarios_quadra/horarios_quadra_store.dart';
@@ -43,7 +44,8 @@ void setupInjector() {
       config: BindConfig(onDispose: (store) => store.dispose()),
     )
     // ── Stores de tela (fábrica: uma instância por abertura) ──────────────
-    ..add<AuthStore>(AuthStore.new);
+    ..add<AuthStore>(AuthStore.new)
+    ..add<LoginStore>(LoginStore.new);
 
   registrarStoresQuadrasCliente(injector);
   registrarStoresReservasCliente(injector);

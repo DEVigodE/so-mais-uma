@@ -658,5 +658,30 @@
     "escolher_outro_horario": "Escolher outro horário / Nova reserva",
     "erro_sem_conexao": "Conecte-se para carregar o código Pix",
     "erro_titulo": "Não foi possível carregar o código Pix"
+  },
+  "login": {
+    "titulo": "Acesse sua conta",
+    "subtitulo": "Agende suas partidas ou gerencie suas quadras esportivas com agilidade.",
+    "email": "E-mail",
+    "formato_valido": "Formato válido",
+    "email_placeholder": "seu.email@exemplo.com",
+    "email_obrigatorio": "Informe o e-mail",
+    "email_invalido": "Informe um e-mail válido",
+    "senha": "Senha",
+    "senha_placeholder": "Digite sua senha",
+    "senha_obrigatoria": "Informe a senha",
+    "alternar_senha": "Alternar visibilidade da senha",
+    "protecao_titulo": "Proteção de Acesso Ativa",
+    "protecao_texto": "Conexão criptografada ponta a ponta com bloqueio temporário após 5 tentativas incorretas.",
+    "entrar": "Entrar",
+    "credencial_invalida": "E-mail ou senha incorretos",
+    "bloqueado": "Muitas tentativas. Tente novamente em 15 minutos.",
+    "sem_conexao": "Sem conexão. Verifique a internet e tente de novo",
+    "sessao_expirada": "Sua sessão expirou. Entre novamente.",
+    "sem_conta": "Não tem uma conta?",
+    "criar_conta": "Criar conta",
+    "ou": "ou",
+    "acesso_gestor": "Acesso do Gestor de Quadra",
+    "rodape": "Versão {versao} · Só mais uma"
   }
 }

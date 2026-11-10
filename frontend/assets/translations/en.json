@@ -658,5 +658,30 @@
     "escolher_outro_horario": "Choose another time / New booking",
     "erro_sem_conexao": "Connect to load the Pix code",
     "erro_titulo": "Could not load the Pix code"
+  },
+  "login": {
+    "titulo": "Sign in to your account",
+    "subtitulo": "Book your matches or manage your sports courts with ease.",
+    "email": "Email",
+    "formato_valido": "Valid format",
+    "email_placeholder": "your.email@example.com",
+    "email_obrigatorio": "Enter your email",
+    "email_invalido": "Enter a valid email",
+    "senha": "Password",
+    "senha_placeholder": "Enter your password",
+    "senha_obrigatoria": "Enter your password",
+    "alternar_senha": "Toggle password visibility",
+    "protecao_titulo": "Access Protection Active",
+    "protecao_texto": "End-to-end encrypted connection with a temporary lock after 5 incorrect attempts.",
+    "entrar": "Sign in",
+    "credencial_invalida": "Incorrect email or password",
+    "bloqueado": "Too many attempts. Try again in 15 minutes.",
+    "sem_conexao": "No connection. Check your internet and try again",
+    "sessao_expirada": "Your session has expired. Please sign in again.",
+    "sem_conta": "Don't have an account?",
+    "criar_conta": "Create account",
+    "ou": "or",
+    "acesso_gestor": "Court Manager Access",
+    "rodape": "Version {versao} · Só mais uma"
   }
 }
