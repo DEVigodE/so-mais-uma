@@ -15,11 +15,13 @@ class App extends StatelessWidget {
 
 
   Widget _buildMaterialApp(BuildContext context) {
+    // Formatadores (intl) seguem o idioma do easy_localization.
+    Intl.defaultLocale = context.locale.toStringWithSeparator(separator: '_');
     return MaterialApp.router(
-      title: 'so_mais_uma',
+      title: 'Só mais uma',
       debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(primaryColorHex: '#16A34A'),
-      darkTheme: buildDarkTheme(primaryColorHex: '#16A34A'),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
       themeMode: ThemeMode.system,
       routerConfig: appRouter,
       localizationsDelegates: context.localizationDelegates,
@@ -28,7 +30,6 @@ class App extends StatelessWidget {
       builder: (context, child) {
         Widget current = child!;
         current = SkeletonWrapper(child: current);
-        current = SessionListenerWrapper(child: current);
         return current;
       },
     );

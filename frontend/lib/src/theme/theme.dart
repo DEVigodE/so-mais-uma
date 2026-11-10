@@ -175,16 +175,15 @@ ThemeData _buildTheme(
       elevation: AppDesignTokens.fallback.cardElevation,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
     ),
-      color: colorScheme.surfaceContainerLow,
+      color: colorScheme.surfaceContainerLowest,
     ),
 
     // Input Decoration Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      fillColor: colorScheme.surfaceContainerLowest,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
 
@@ -306,7 +305,7 @@ ThemeData _buildTheme(
 
     // Dialog Theme
     dialogTheme: DialogThemeData(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
       backgroundColor: colorScheme.surface,
       titleTextStyle:
@@ -365,25 +364,99 @@ ThemeData _buildTheme(
   );
   }
 
-ThemeData buildLightTheme({required String primaryColorHex}) {
-  final seed =
-      _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#6750A4');
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: seed,
-    brightness: Brightness.light,
-  );
-  return _buildTheme(colorScheme, AppPalettes.light);
-  }
+/// Esquema claro explícito com os tokens do `tailwind.config` do protótipo (D2).
+const ColorScheme appLightColorScheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: Color(0xFF006B2C),
+  onPrimary: Color(0xFFFFFFFF),
+  primaryContainer: Color(0xFF00873A),
+  onPrimaryContainer: Color(0xFFF7FFF2),
+  primaryFixed: Color(0xFF7FFC97),
+  primaryFixedDim: Color(0xFF62DF7D),
+  onPrimaryFixed: Color(0xFF002109),
+  onPrimaryFixedVariant: Color(0xFF005320),
+  secondary: Color(0xFF565E74),
+  onSecondary: Color(0xFFFFFFFF),
+  secondaryContainer: Color(0xFFDAE2FD),
+  onSecondaryContainer: Color(0xFF5C647A),
+  secondaryFixed: Color(0xFFDAE2FD),
+  secondaryFixedDim: Color(0xFFBEC6E0),
+  onSecondaryFixed: Color(0xFF131B2E),
+  onSecondaryFixedVariant: Color(0xFF3F465C),
+  tertiary: Color(0xFF755800),
+  onTertiary: Color(0xFFFFFFFF),
+  tertiaryContainer: Color(0xFF936F00),
+  onTertiaryContainer: Color(0xFFFFFBFF),
+  tertiaryFixed: Color(0xFFFFDF9A),
+  tertiaryFixedDim: Color(0xFFF7BE1D),
+  onTertiaryFixed: Color(0xFF251A00),
+  onTertiaryFixedVariant: Color(0xFF5A4300),
+  error: Color(0xFFBA1A1A),
+  onError: Color(0xFFFFFFFF),
+  errorContainer: Color(0xFFFFDAD6),
+  onErrorContainer: Color(0xFF93000A),
+  surface: Color(0xFFF7F9FB),
+  onSurface: Color(0xFF191C1E),
+  onSurfaceVariant: Color(0xFF3E4A3D),
+  surfaceDim: Color(0xFFD8DADC),
+  surfaceBright: Color(0xFFF7F9FB),
+  surfaceContainerLowest: Color(0xFFFFFFFF),
+  surfaceContainerLow: Color(0xFFF2F4F6),
+  surfaceContainer: Color(0xFFECEEF0),
+  surfaceContainerHigh: Color(0xFFE6E8EA),
+  surfaceContainerHighest: Color(0xFFE0E3E5),
+  outline: Color(0xFF6E7B6C),
+  outlineVariant: Color(0xFFBDCABA),
+  shadow: Color(0xFF000000),
+  scrim: Color(0xFF000000),
+  inverseSurface: Color(0xFF2D3133),
+  onInverseSurface: Color(0xFFEFF1F3),
+  inversePrimary: Color(0xFF62DF7D),
+  surfaceTint: Color(0xFF006E2D),
+);
 
-ThemeData buildDarkTheme({required String primaryColorHex}) {
-  final seed =
-      _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#6750A4');
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: seed,
-    brightness: Brightness.dark,
-  );
-  return _buildTheme(colorScheme, AppPalettes.dark);
-  }
+/// Esquema escuro: tons gerados pelo seed e sobrescritos pelos tokens que o
+/// protótipo já define (tabela tonal do Material 3, D2).
+final ColorScheme appDarkColorScheme = ColorScheme.fromSeed(
+  seedColor: const Color(0xFF006B2C),
+  brightness: Brightness.dark,
+).copyWith(
+  primary: const Color(0xFF62DF7D),
+  primaryContainer: const Color(0xFF005320),
+  onPrimaryContainer: const Color(0xFF7FFC97),
+  primaryFixed: const Color(0xFF7FFC97),
+  primaryFixedDim: const Color(0xFF62DF7D),
+  onPrimaryFixed: const Color(0xFF002109),
+  onPrimaryFixedVariant: const Color(0xFF005320),
+  secondary: const Color(0xFFBEC6E0),
+  secondaryContainer: const Color(0xFF3F465C),
+  onSecondaryContainer: const Color(0xFFDAE2FD),
+  tertiary: const Color(0xFFF7BE1D),
+  tertiaryContainer: const Color(0xFF5A4300),
+  onTertiaryContainer: const Color(0xFFFFDF9A),
+  tertiaryFixed: const Color(0xFFFFDF9A),
+  tertiaryFixedDim: const Color(0xFFF7BE1D),
+  onTertiaryFixed: const Color(0xFF251A00),
+  onTertiaryFixedVariant: const Color(0xFF5A4300),
+  error: const Color(0xFFFFB4AB),
+  onError: const Color(0xFF690005),
+  errorContainer: const Color(0xFF93000A),
+  onErrorContainer: const Color(0xFFFFDAD6),
+  onSurface: const Color(0xFFE0E3E5),
+  inverseSurface: const Color(0xFFE0E3E5),
+  onInverseSurface: const Color(0xFF2D3133),
+  inversePrimary: const Color(0xFF006B2C),
+);
+
+/// O parâmetro [primaryColorHex] é mantido por compatibilidade e ignorado: as
+/// cores vêm de [appLightColorScheme].
+ThemeData buildLightTheme({String primaryColorHex = ''}) =>
+    _buildTheme(appLightColorScheme, AppPalettes.light);
+
+/// O parâmetro [primaryColorHex] é mantido por compatibilidade e ignorado: as
+/// cores vêm de [appDarkColorScheme].
+ThemeData buildDarkTheme({String primaryColorHex = ''}) =>
+    _buildTheme(appDarkColorScheme, AppPalettes.dark);
 
 CupertinoThemeData buildCupertinoTheme({required String primaryColorHex}) {
   final seed =

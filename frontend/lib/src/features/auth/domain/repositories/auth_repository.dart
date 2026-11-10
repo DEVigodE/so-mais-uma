@@ -1,5 +1,5 @@
 import 'package:so_mais_uma/src/utils/utils.dart';
-import 'package:so_mais_uma/src/features/auth/domain/entities/user.dart';
+import 'package:so_mais_uma/src/shared/domain/entities/app_user.dart';
 
 abstract class AuthRepository {
   /// Stream of auth state changes. Emits AppUser when authenticated, null when not.

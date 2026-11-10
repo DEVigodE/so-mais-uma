@@ -25,16 +25,9 @@ FutureEither<T> runTask<T>(
         category: category,
         context: context,
       );
-      showGlobalToast(
-        message:
-            'No internet connection. Please check your connection and try again.',
-        status: 'warning',
-      );
-      return left(
-        const NetworkFailure(
-          'No internet connection. Please check your connection and try again.',
-        ),
-      );
+      // Sem toast global: cada tela decide como mostrar o offline (banner,
+      // snackbar ou botão desabilitado).
+      return left(NetworkFailure('erros.sem_conexao'.tr()));
     }
   }
 

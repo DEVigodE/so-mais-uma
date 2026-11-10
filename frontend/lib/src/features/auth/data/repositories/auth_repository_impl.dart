@@ -1,7 +1,6 @@
 import 'package:so_mais_uma/src/imports/core_imports.dart';
 import 'package:so_mais_uma/src/imports/packages_imports.dart';
 
-import 'package:so_mais_uma/src/features/auth/domain/entities/user.dart';
 import 'package:so_mais_uma/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:so_mais_uma/src/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:so_mais_uma/src/features/auth/data/datasources/auth_remote_data_source_impl.dart';
@@ -23,6 +22,9 @@ class AuthRepositoryImpl implements AuthRepository {
       email: entity.email.isEmpty ? (fallbackEmail ?? '') : entity.email,
       name: entity.name ?? fallbackName,
       photoUrl: entity.photoUrl,
+      perfil: entity.perfil,
+      telefone: entity.telefone,
+      criadoEm: entity.criadoEm,
     );
   }
 

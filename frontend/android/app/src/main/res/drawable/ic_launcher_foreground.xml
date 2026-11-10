@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Frente do ícone adaptativo: as linhas do campo do logo (so_mais_uma_logo, viewBox 120x120),
+  reduzidas a 60 % e centralizadas na camada de 108 dp para caber na zona segura de 66 dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.6"
+        android:scaleY="0.6"
+        android:translateX="18"
+        android:translateY="18">
+        <!-- Contorno do campo -->
+        <path
+            android:pathData="M28,24 H92 A8,8 0 0 1 100,32 V88 A8,8 0 0 1 92,96 H28 A8,8 0 0 1 20,88 V32 A8,8 0 0 1 28,24 Z"
+            android:strokeWidth="4"
+            android:strokeAlpha="0.85"
+            android:strokeColor="#FFFFFF" />
+        <!-- Linha do meio -->
+        <path
+            android:pathData="M20,60 H100"
+            android:strokeWidth="3"
+            android:strokeAlpha="0.85"
+            android:strokeColor="#FFFFFF" />
+        <!-- Círculo central -->
+        <path
+            android:pathData="M46,60 A14,14 0 1 1 74,60 A14,14 0 1 1 46,60 Z"
+            android:strokeWidth="3"
+            android:strokeAlpha="0.85"
+            android:strokeColor="#FFFFFF" />
+        <!-- Marca do centro -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M56,60 A4,4 0 1 1 64,60 A4,4 0 1 1 56,60 Z" />
+        <!-- Áreas de gol -->
+        <path
+            android:pathData="M44,24 L44,38 L76,38 L76,24"
+            android:strokeWidth="3"
+            android:strokeAlpha="0.85"
+            android:strokeColor="#FFFFFF" />
+        <path
+            android:pathData="M44,96 L44,82 L76,82 L76,96"
+            android:strokeWidth="3"
+            android:strokeAlpha="0.85"
+            android:strokeColor="#FFFFFF" />
+    </group>
+</vector>

@@ -27,6 +27,8 @@ analyzer:
     - "**/web/**"
     - "**/test/**"
     - "**/integration_test/**"
+    - build/**
+    - android/**
   strong-mode:
     implicit-casts: true
     implicit-dynamic: false

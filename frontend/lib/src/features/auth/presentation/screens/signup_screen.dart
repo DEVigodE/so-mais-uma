@@ -3,7 +3,11 @@ import 'package:so_mais_uma/src/imports/packages_imports.dart';
 
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  const SignupScreen({super.key, this.perfil = PerfilUsuario.cliente});
+
+  /// Perfil da conta criada; o atalho "Acesso do Gestor de Quadra" do Login
+  /// abre o Cadastro com [PerfilUsuario.dono].
+  final PerfilUsuario perfil;
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -45,6 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
           name: _nameController.text.trim(),
           email: _emailController.text.trim(), 
           password: _passwordController.text.trim(),
+          perfil: widget.perfil.api,
         );
 
         result.fold(

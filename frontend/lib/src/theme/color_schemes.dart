@@ -93,34 +93,36 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 class AppPalettes {
   AppPalettes._();
 
+  /// Tokens do protótipo (D2): success = primary, warning = tertiary,
+  /// info = secondary.
   static const light = AppColorsExtension(
-    success: Color(0xFF2E7D32),
-    onSuccess: Colors.white,
-    successContainer: Color(0xFFA5D6A7),
-    onSuccessContainer: Color(0xFF1B5E20),
-    warning: Color(0xFFED6C02),
-    onWarning: Colors.white,
-    warningContainer: Color(0xFFFFCC80),
-    onWarningContainer: Color(0xFFE65100),
-    info: Color(0xFF0288D1),
-    onInfo: Colors.white,
-    infoContainer: Color(0xFF81D4FA),
-    onInfoContainer: Color(0xFF01579B),
+    success: Color(0xFF006B2C),
+    onSuccess: Color(0xFFFFFFFF),
+    successContainer: Color(0xFF7FFC97),
+    onSuccessContainer: Color(0xFF002109),
+    warning: Color(0xFF755800),
+    onWarning: Color(0xFFFFFFFF),
+    warningContainer: Color(0xFFFFDF9A),
+    onWarningContainer: Color(0xFF251A00),
+    info: Color(0xFF565E74),
+    onInfo: Color(0xFFFFFFFF),
+    infoContainer: Color(0xFFDAE2FD),
+    onInfoContainer: Color(0xFF131B2E),
   );
 
   static const dark = AppColorsExtension(
-    success: Color(0xFF81C784),
-    onSuccess: Color(0xFF003300),
-    successContainer: Color(0xFF1B5E20),
-    onSuccessContainer: Color(0xFFA5D6A7),
-    warning: Color(0xFFFFB74D),
-    onWarning: Color(0xFF5D4037),
-    warningContainer: Color(0xFFE65100),
-    onWarningContainer: Color(0xFFFFCC80),
-    info: Color(0xFF4FC3F7),
-    onInfo: Color(0xFF01579B),
-    infoContainer: Color(0xFF0277BD),
-    onInfoContainer: Color(0xFFE1F5FE),
+    success: Color(0xFF62DF7D),
+    onSuccess: Color(0xFF00391A),
+    successContainer: Color(0xFF005320),
+    onSuccessContainer: Color(0xFF7FFC97),
+    warning: Color(0xFFF7BE1D),
+    onWarning: Color(0xFF3F2E00),
+    warningContainer: Color(0xFF5A4300),
+    onWarningContainer: Color(0xFFFFDF9A),
+    info: Color(0xFFBEC6E0),
+    onInfo: Color(0xFF283044),
+    infoContainer: Color(0xFF3F465C),
+    onInfoContainer: Color(0xFFDAE2FD),
   );
   }
 
